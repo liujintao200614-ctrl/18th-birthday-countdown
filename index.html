@@ -1,0 +1,525 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="strawberry">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>✨ 18岁生日倒计时 ✨</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=ZCOOL+KuaiLe&family=Baloo+2:wght@600;800&family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet" />
+<style>
+  /* ---------- 主题变量 ---------- */
+  :root {
+    --font-display: 'ZCOOL KuaiLe', 'Noto Sans SC', sans-serif;
+    --font-num: 'Baloo 2', 'ZCOOL KuaiLe', sans-serif;
+    --font-body: 'Noto Sans SC', sans-serif;
+  }
+  html[data-theme="strawberry"] {
+    --bg-a: #ffe3ef; --bg-b: #ffd1e3; --bg-c: #fff4f9;
+    --card: #ffffff; --card-border: #ffc2da;
+    --text: #a8385f; --text-soft: #cf7a9a;
+    --accent: #ff6fa5; --accent-deep: #f04d8a;
+    --shadow: rgba(240, 77, 138, 0.25);
+    --bar-track: #ffd8e8;
+  }
+  html[data-theme="starry"] {
+    --bg-a: #e8e0ff; --bg-b: #d4c8ff; --bg-c: #f4efff;
+    --card: #ffffff; --card-border: #d0bdff;
+    --text: #5b3fa8; --text-soft: #937fce;
+    --accent: #8f6fff; --accent-deep: #6f4de0;
+    --shadow: rgba(111, 77, 224, 0.25);
+    --bar-track: #e3d8ff;
+  }
+  html[data-theme="peach"] {
+    --bg-a: #ffe9d6; --bg-b: #ffd9c4; --bg-c: #fff5ec;
+    --card: #ffffff; --card-border: #ffcfae;
+    --text: #b05a2a; --text-soft: #d68c5f;
+    --accent: #ff9457; --accent-deep: #f2762e;
+    --shadow: rgba(242, 118, 46, 0.25);
+    --bar-track: #ffe0c9;
+  }
+  html[data-theme="mint"] {
+    --bg-a: #dcf7ea; --bg-b: #c5f0dd; --bg-c: #f0fdf7;
+    --card: #ffffff; --card-border: #a8e6c9;
+    --text: #1f7a52; --text-soft: #6bbd97;
+    --accent: #3ecf8e; --accent-deep: #21b374;
+    --shadow: rgba(33, 179, 116, 0.25);
+    --bar-track: #d2f3e3;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    min-height: 100vh;
+    font-family: var(--font-body);
+    color: var(--text);
+    background:
+      radial-gradient(circle at 15% 20%, var(--bg-a) 0%, transparent 55%),
+      radial-gradient(circle at 85% 75%, var(--bg-b) 0%, transparent 55%),
+      var(--bg-c);
+    overflow-x: hidden;
+    transition: color .5s;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  /* 圆点波点纹理背景 */
+  body::before {
+    content: '';
+    position: fixed; inset: 0;
+    background-image: radial-gradient(var(--card-border) 1.5px, transparent 1.5px);
+    background-size: 28px 28px;
+    opacity: .35;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* ---------- 飘落装饰 ---------- */
+  #particles { position: fixed; inset: 0; pointer-events: none; z-index: 1; overflow: hidden; }
+  .particle {
+    position: absolute;
+    top: -8vh;
+    animation: fall linear infinite;
+    user-select: none;
+  }
+  @keyframes fall {
+    0%   { transform: translateY(0) rotate(0deg); }
+    100% { transform: translateY(115vh) rotate(360deg); }
+  }
+
+  /* ---------- 主题切换器 ---------- */
+  .theme-switcher {
+    position: relative;
+    z-index: 5;
+    margin-top: 24px;
+    display: flex;
+    gap: 10px;
+    background: rgba(255,255,255,.65);
+    backdrop-filter: blur(8px);
+    padding: 8px 14px;
+    border-radius: 999px;
+    border: 2px solid var(--card-border);
+    box-shadow: 0 6px 20px var(--shadow);
+    transition: border-color .5s, box-shadow .5s;
+  }
+  .theme-btn {
+    border: none;
+    cursor: pointer;
+    font-family: var(--font-display);
+    font-size: 14px;
+    white-space: nowrap;
+    padding: 7px 14px;
+    border-radius: 999px;
+    background: transparent;
+    color: var(--text-soft);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    transition: all .3s;
+  }
+  .theme-btn .dot {
+    width: 14px; height: 14px; border-radius: 50%;
+    box-shadow: inset 0 -3px 0 rgba(0,0,0,.12);
+  }
+  .theme-btn[data-set="strawberry"] .dot { background: #ff6fa5; }
+  .theme-btn[data-set="starry"]     .dot { background: #8f6fff; }
+  .theme-btn[data-set="peach"]      .dot { background: #ff9457; }
+  .theme-btn[data-set="mint"]       .dot { background: #3ecf8e; }
+  .theme-btn:hover { transform: translateY(-2px) scale(1.05); color: var(--text); }
+  .theme-btn.active {
+    background: var(--accent);
+    color: #fff;
+    box-shadow: 0 4px 12px var(--shadow);
+  }
+
+  /* ---------- 主内容 ---------- */
+  main {
+    position: relative;
+    z-index: 5;
+    width: min(860px, 92vw);
+    text-align: center;
+    padding: 6vh 0 8vh;
+    animation: rise .9s ease both;
+  }
+  @keyframes rise {
+    from { opacity: 0; transform: translateY(26px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .subtitle {
+    font-family: var(--font-display);
+    font-size: clamp(16px, 2.4vw, 22px);
+    color: var(--text-soft);
+    letter-spacing: 6px;
+  }
+
+  h1 {
+    font-family: var(--font-display);
+    font-size: clamp(30px, 6vw, 56px);
+    margin: 10px 0 6px;
+    line-height: 1.3;
+    text-shadow: 3px 3px 0 var(--bar-track);
+  }
+  #girl-name {
+    color: var(--accent-deep);
+    border-bottom: 3px dashed var(--accent);
+    padding: 0 6px;
+    cursor: text;
+    outline: none;
+    transition: background .3s;
+  }
+  #girl-name:hover { background: var(--bar-track); border-radius: 8px; }
+
+  .date-line {
+    font-size: clamp(13px, 1.8vw, 16px);
+    color: var(--text-soft);
+    margin-bottom: 4vh;
+  }
+
+  .cake {
+    display: inline-block;
+    cursor: pointer;
+    font-size: clamp(40px, 7vw, 64px);
+    animation: bounce 2.2s ease-in-out infinite;
+    filter: drop-shadow(0 8px 14px var(--shadow));
+    transition: transform .2s;
+  }
+  .cake:active { transform: scale(.85); }
+  @keyframes bounce {
+    0%, 100% { transform: translateY(0) rotate(-4deg); }
+    50%      { transform: translateY(-10px) rotate(4deg); }
+  }
+  .cake-hint {
+    font-size: 12px;
+    color: var(--text-soft);
+    margin: 6px 0 3vh;
+    opacity: .8;
+  }
+
+  /* ---------- 倒计时卡片 ---------- */
+  .countdown {
+    display: flex;
+    justify-content: center;
+    gap: clamp(10px, 2.5vw, 24px);
+    flex-wrap: wrap;
+  }
+  .unit {
+    background: var(--card);
+    border: 3px solid var(--card-border);
+    border-radius: 26px;
+    width: clamp(76px, 18vw, 150px);
+    padding: clamp(14px, 2.4vw, 26px) 0 clamp(10px, 1.8vw, 18px);
+    box-shadow: 0 10px 24px var(--shadow), inset 0 -6px 0 var(--bar-track);
+    transition: border-color .5s, box-shadow .5s, transform .3s;
+    position: relative;
+  }
+  .unit:hover { transform: translateY(-6px) rotate(-1.5deg); }
+  .unit:nth-child(even):hover { transform: translateY(-6px) rotate(1.5deg); }
+  .unit::after {
+    content: attr(data-deco);
+    position: absolute;
+    top: -14px; right: -8px;
+    font-size: 22px;
+    transform: rotate(15deg);
+  }
+  .unit .num {
+    font-family: var(--font-num);
+    font-weight: 800;
+    font-size: clamp(34px, 6.5vw, 64px);
+    line-height: 1.05;
+    color: var(--accent-deep);
+    display: block;
+  }
+  .unit .num.pop { animation: pop .35s ease; }
+  @keyframes pop {
+    0% { transform: scale(1); }
+    45% { transform: scale(1.22); }
+    100% { transform: scale(1); }
+  }
+  .unit .label {
+    font-family: var(--font-display);
+    font-size: clamp(13px, 1.8vw, 17px);
+    color: var(--text-soft);
+    letter-spacing: 3px;
+  }
+
+  /* ---------- 进度条 ---------- */
+  .progress-wrap {
+    margin: 6vh auto 0;
+    width: min(560px, 88vw);
+  }
+  .progress-label {
+    font-family: var(--font-display);
+    font-size: 15px;
+    color: var(--text-soft);
+    margin-bottom: 12px;
+  }
+  .progress-label b { color: var(--accent-deep); font-size: 18px; }
+  .bar {
+    position: relative;
+    height: 22px;
+    background: var(--bar-track);
+    border-radius: 999px;
+    border: 2px solid var(--card-border);
+    overflow: visible;
+  }
+  .bar-fill {
+    height: 100%;
+    border-radius: 999px;
+    background: repeating-linear-gradient(
+      -45deg,
+      var(--accent) 0 12px,
+      var(--accent-deep) 12px 24px
+    );
+    background-size: 34px 34px;
+    animation: candy 1.2s linear infinite;
+    transition: width 1s ease;
+    min-width: 22px;
+  }
+  @keyframes candy { to { background-position: 34px 0; } }
+  .bar-runner {
+    position: absolute;
+    top: 50%;
+    transform: translate(-50%, -58%);
+    font-size: 30px;
+    transition: left 1s ease;
+    filter: drop-shadow(0 4px 6px var(--shadow));
+  }
+
+  .blessing {
+    margin-top: 6vh;
+    font-family: var(--font-display);
+    font-size: clamp(15px, 2.2vw, 19px);
+    color: var(--text-soft);
+    line-height: 2;
+  }
+
+  /* ---------- 庆祝态 ---------- */
+  .celebrate-title {
+    display: none;
+    font-family: var(--font-display);
+    font-size: clamp(34px, 7vw, 64px);
+    color: var(--accent-deep);
+    margin: 4vh 0;
+    animation: bounce 1.4s ease-in-out infinite;
+  }
+  body.done .celebrate-title { display: block; }
+  body.done .countdown, body.done .progress-wrap, body.done .subtitle { display: none; }
+
+  /* ---------- 撒花 ---------- */
+  .confetti {
+    position: fixed;
+    z-index: 50;
+    pointer-events: none;
+    animation: confetti-fall ease-in forwards;
+  }
+  @keyframes confetti-fall {
+    0%   { transform: translate(0, 0) rotate(0deg); opacity: 1; }
+    100% { transform: translate(var(--cx), 105vh) rotate(720deg); opacity: .85; }
+  }
+
+  footer {
+    position: relative;
+    z-index: 5;
+    padding-bottom: 30px;
+    font-size: 12px;
+    color: var(--text-soft);
+    opacity: .75;
+  }
+
+  /* ---------- 手机适配 ---------- */
+  @media (max-width: 480px) {
+    .theme-switcher {
+      gap: 2px;
+      padding: 6px 8px;
+      width: min(94vw, 400px);
+      justify-content: center;
+    }
+    .theme-btn { font-size: 12px; padding: 6px 8px; gap: 4px; }
+    .theme-btn .dot { width: 11px; height: 11px; }
+  }
+  @media (max-width: 400px) {
+    .countdown {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 14px;
+      width: min(320px, 88vw);
+      margin: 0 auto;
+    }
+    .unit { width: auto; }
+  }
+</style>
+</head>
+<body>
+
+<div id="particles"></div>
+
+<nav class="theme-switcher" aria-label="切换主题">
+  <button class="theme-btn active" data-set="strawberry"><span class="dot"></span>草莓奶油</button>
+  <button class="theme-btn" data-set="starry"><span class="dot"></span>星黛紫梦</button>
+  <button class="theme-btn" data-set="peach"><span class="dot"></span>蜜桃汽水</button>
+  <button class="theme-btn" data-set="mint"><span class="dot"></span>薄荷软糖</button>
+</nav>
+
+<main>
+  <span class="cake" id="cake" title="点我撒花!">🎂</span>
+  <p class="cake-hint">(点一下蛋糕有惊喜哦)</p>
+
+  <p class="subtitle">・ 距 离 ・</p>
+  <h1><span id="girl-name" contenteditable="true" spellcheck="false">小可爱</span> 的 18 岁生日</h1>
+  <p class="date-line">2026 年 9 月 28 日 · 点击名字可以改成她的名字哦</p>
+
+  <h2 class="celebrate-title">🎉 生日快乐!欢迎来到 18 岁 🎉</h2>
+
+  <div class="countdown" id="countdown">
+    <div class="unit" data-deco="🎀"><span class="num" id="d">--</span><span class="label">天</span></div>
+    <div class="unit" data-deco="💗"><span class="num" id="h">--</span><span class="label">时</span></div>
+    <div class="unit" data-deco="🌟"><span class="num" id="m">--</span><span class="label">分</span></div>
+    <div class="unit" data-deco="🍬"><span class="num" id="s">--</span><span class="label">秒</span></div>
+  </div>
+
+  <div class="progress-wrap">
+    <p class="progress-label">17 岁的旅程已经走过 <b id="pct">0%</b> 啦</p>
+    <div class="bar">
+      <div class="bar-fill" id="bar-fill" style="width:0%"></div>
+      <span class="bar-runner" id="runner" style="left:0%">🏃‍♀️</span>
+    </div>
+  </div>
+
+  <p class="blessing">
+    愿你的 18 岁,像草莓蛋糕一样甜,<br>
+    像夏天的汽水一样冒着快乐的泡泡 🥂
+  </p>
+</main>
+
+<footer>用心做给最好的朋友 💝</footer>
+
+<script>
+  /* ================= 配置 ================= */
+  const TARGET = new Date('2026-09-28T00:00:00+08:00'); // 18 岁生日
+  const START  = new Date('2025-09-28T00:00:00+08:00'); // 17 岁生日(进度条起点)
+
+  /* ================= 主题 ================= */
+  const THEME_PARTICLES = {
+    strawberry: ['🍓', '💗', '🎀', '🌸', '🧁'],
+    starry:     ['⭐', '🌙', '💜', '✨', '🔮'],
+    peach:      ['🍑', '🧋', '🍊', '🫧', '🍹'],
+    mint:       ['🌿', '🍬', '🐸', '🍏', '🫶'],
+  };
+  const html = document.documentElement;
+  const buttons = document.querySelectorAll('.theme-btn');
+
+  function setTheme(name) {
+    html.dataset.theme = name;
+    buttons.forEach(b => b.classList.toggle('active', b.dataset.set === name));
+    localStorage.setItem('bday-theme', name);
+    spawnParticles(name);
+  }
+  buttons.forEach(b => b.addEventListener('click', () => setTheme(b.dataset.set)));
+
+  /* ================= 飘落装饰 ================= */
+  const particleBox = document.getElementById('particles');
+  function spawnParticles(theme) {
+    particleBox.innerHTML = '';
+    const icons = THEME_PARTICLES[theme];
+    for (let i = 0; i < 18; i++) {
+      const p = document.createElement('span');
+      p.className = 'particle';
+      p.textContent = icons[i % icons.length];
+      p.style.left = Math.random() * 100 + 'vw';
+      p.style.fontSize = (14 + Math.random() * 20) + 'px';
+      p.style.animationDuration = (9 + Math.random() * 14) + 's';
+      p.style.animationDelay = (-Math.random() * 20) + 's';
+      p.style.opacity = .4 + Math.random() * .5;
+      particleBox.appendChild(p);
+    }
+  }
+
+  /* ================= 倒计时 ================= */
+  const el = { d: byId('d'), h: byId('h'), m: byId('m'), s: byId('s') };
+  function byId(id) { return document.getElementById(id); }
+  function pad(n) { return String(n).padStart(2, '0'); }
+
+  function setNum(node, val) {
+    if (node.textContent !== val) {
+      node.textContent = val;
+      node.classList.remove('pop');
+      void node.offsetWidth; // 重新触发动画
+      node.classList.add('pop');
+    }
+  }
+
+  let celebrated = false;
+  function tick() {
+    const now = new Date();
+    let diff = TARGET - now;
+
+    if (diff <= 0) {
+      document.body.classList.add('done');
+      if (!celebrated) { celebrated = true; burstConfetti(160); }
+      setNum(el.d, '0'); setNum(el.h, '00'); setNum(el.m, '00'); setNum(el.s, '00');
+      return;
+    }
+
+    const day = Math.floor(diff / 86400000);
+    const hr  = Math.floor(diff / 3600000) % 24;
+    const min = Math.floor(diff / 60000) % 60;
+    const sec = Math.floor(diff / 1000) % 60;
+    setNum(el.d, String(day));
+    setNum(el.h, pad(hr));
+    setNum(el.m, pad(min));
+    setNum(el.s, pad(sec));
+
+    const pct = Math.min(100, Math.max(0, (now - START) / (TARGET - START) * 100));
+    byId('pct').textContent = pct.toFixed(1) + '%';
+    byId('bar-fill').style.width = pct + '%';
+    byId('runner').style.left = pct + '%';
+  }
+  tick();
+  setInterval(tick, 1000);
+
+  /* ================= 撒花 ================= */
+  const CONFETTI_COLORS = ['#ff6fa5', '#8f6fff', '#ff9457', '#3ecf8e', '#ffd93d', '#6ec6ff'];
+  function burstConfetti(count = 90) {
+    for (let i = 0; i < count; i++) {
+      const c = document.createElement('span');
+      c.className = 'confetti';
+      const isEmoji = Math.random() < .25;
+      if (isEmoji) {
+        c.textContent = THEME_PARTICLES[html.dataset.theme][Math.floor(Math.random() * 5)];
+        c.style.fontSize = (14 + Math.random() * 16) + 'px';
+      } else {
+        c.style.width = (7 + Math.random() * 8) + 'px';
+        c.style.height = (10 + Math.random() * 8) + 'px';
+        c.style.borderRadius = Math.random() < .5 ? '50%' : '3px';
+        c.style.background = CONFETTI_COLORS[Math.floor(Math.random() * CONFETTI_COLORS.length)];
+      }
+      c.style.left = Math.random() * 100 + 'vw';
+      c.style.top = '-4vh';
+      c.style.setProperty('--cx', (Math.random() * 240 - 120) + 'px');
+      c.style.animationDuration = (2.2 + Math.random() * 2.4) + 's';
+      document.body.appendChild(c);
+      setTimeout(() => c.remove(), 5000);
+    }
+  }
+  byId('cake').addEventListener('click', () => burstConfetti());
+
+  /* ================= 名字记忆 ================= */
+  const nameEl = byId('girl-name');
+  const savedName = localStorage.getItem('bday-name');
+  if (savedName) nameEl.textContent = savedName;
+  nameEl.addEventListener('blur', () => {
+    const v = nameEl.textContent.trim() || '小可爱';
+    nameEl.textContent = v;
+    localStorage.setItem('bday-name', v);
+  });
+  nameEl.addEventListener('keydown', e => {
+    if (e.key === 'Enter') { e.preventDefault(); nameEl.blur(); }
+  });
+
+  /* ================= 初始化 ================= */
+  setTheme(localStorage.getItem('bday-theme') || 'strawberry');
+</script>
+</body>
+</html>
