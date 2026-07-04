@@ -214,8 +214,14 @@
     transition: border-color .5s, box-shadow .5s, transform .3s;
     position: relative;
   }
-  .unit:hover { transform: translateY(-6px) rotate(-1.5deg); }
-  .unit:nth-child(even):hover { transform: translateY(-6px) rotate(1.5deg); }
+  @media (hover: hover) and (pointer: fine) {
+    .unit:hover { transform: translateY(-6px) rotate(-1.5deg); }
+    .unit:nth-child(even):hover { transform: translateY(-6px) rotate(1.5deg); }
+  }
+  .unit:active,
+  .unit.touch-active { transform: translateY(-6px) rotate(-1.5deg) scale(.97); }
+  .unit:nth-child(even):active,
+  .unit:nth-child(even).touch-active { transform: translateY(-6px) rotate(1.5deg) scale(.97); }
   .unit::after {
     content: attr(data-deco);
     position: absolute;
@@ -435,6 +441,16 @@
       particleBox.appendChild(p);
     }
   }
+
+  /* ================= 移动端触摸反馈 ================= */
+  document.addEventListener('touchstart', () => {}, { passive: true }); // 激活 iOS 的 :active 样式
+  document.querySelectorAll('.unit').forEach(unit => {
+    const activate = () => unit.classList.add('touch-active');
+    const deactivate = () => unit.classList.remove('touch-active');
+    unit.addEventListener('touchstart', activate, { passive: true });
+    unit.addEventListener('touchend', deactivate);
+    unit.addEventListener('touchcancel', deactivate);
+  });
 
   /* ================= 倒计时 ================= */
   const el = { d: byId('d'), h: byId('h'), m: byId('m'), s: byId('s') };
