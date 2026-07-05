@@ -227,10 +227,10 @@ language sql
 security definer
 set search_path = public
 as $$
-  select id, author, body, created_at
-  from public.comments
-  where memory_id = p_memory_id
-  order by created_at asc;
+  select c.id, c.author, c.body, c.created_at
+  from public.comments c
+  where c.memory_id = p_memory_id
+  order by c.created_at asc;
 $$;
 
 -- ---------- 发表一条评论 ----------
@@ -253,7 +253,7 @@ begin
   if length(p_body) > 2000 then
     raise exception '评论太长啦';
   end if;
-  if not exists (select 1 from public.memories where id = p_memory_id) then
+  if not exists (select 1 from public.memories m where m.id = p_memory_id) then
     raise exception '这篇回忆不存在';
   end if;
 
