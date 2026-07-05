@@ -108,11 +108,23 @@
     100% { transform: translateY(115vh) rotate(360deg); }
   }
 
+  /* ---------- 顶部栏:主题 + 回忆入口 ---------- */
+  .site-top {
+    position: relative;
+    z-index: 40;
+    width: min(860px, 92vw);
+    margin: 0 auto;
+    padding-top: max(18px, env(safe-area-inset-top, 18px));
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+
   /* ---------- 主题切换器 ---------- */
   .theme-switcher {
     position: relative;
     z-index: 5;
-    margin-top: 24px;
     display: flex;
     gap: 10px;
     background: rgba(255,255,255,.65);
@@ -485,26 +497,28 @@
   /* ========== 回忆模块 ========== */
   /* 入口按钮 */
   .mem-entry {
-    position: fixed;
-    top: 22px; right: 22px;
-    z-index: 40;
+    position: relative;
+    z-index: 5;
     display: inline-flex;
     align-items: center;
-    gap: 6px;
+    justify-content: center;
+    gap: 8px;
     font-family: var(--font-display);
-    font-size: 14px;
-    color: var(--text);
-    background: rgba(255,255,255,.7);
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--accent-deep);
+    background: linear-gradient(135deg, rgba(255,255,255,.92) 0%, var(--bar-track) 100%);
     backdrop-filter: blur(8px);
-    border: 2px solid var(--card-border);
+    border: 2px solid var(--accent);
     border-radius: 999px;
-    padding: 8px 16px;
+    padding: 11px 22px;
     cursor: pointer;
-    box-shadow: 0 6px 18px var(--shadow);
+    box-shadow: 0 8px 22px var(--shadow);
     transition: transform .2s, box-shadow .2s, border-color .5s;
+    align-self: center;
   }
-  .mem-entry:hover { transform: translateY(-2px) scale(1.04); }
-  .mem-entry:active { transform: scale(.96); }
+  .mem-entry:hover { transform: translateY(-2px); box-shadow: 0 12px 28px var(--shadow); }
+  .mem-entry:active { transform: scale(.97); }
 
   /* 面板 */
   .mem {
@@ -1064,16 +1078,45 @@
 
   /* ---------- 手机适配 ---------- */
   @media (max-width: 480px) {
-    .theme-switcher {
-      gap: 2px;
-      padding: 6px 8px;
-      width: min(94vw, 400px);
-      justify-content: center;
+    .site-top {
+      width: 94vw;
+      gap: 10px;
+      padding-top: max(12px, env(safe-area-inset-top, 12px));
     }
-    .theme-btn { font-size: 12px; padding: 6px 8px; gap: 4px; }
+    .theme-switcher {
+      gap: 4px;
+      padding: 6px 10px;
+      width: 100%;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      justify-content: flex-start;
+      flex-wrap: nowrap;
+      scrollbar-width: none;
+    }
+    .theme-switcher::-webkit-scrollbar { display: none; }
+    .theme-btn { font-size: 12px; padding: 6px 10px; gap: 4px; flex: 0 0 auto; }
     .theme-btn .dot { width: 11px; height: 11px; }
-    .mem-entry { top: 14px; right: 14px; font-size: 13px; padding: 7px 12px; }
+    .mem-entry {
+      width: 100%;
+      padding: 13px 20px;
+      font-size: 16px;
+      border-radius: 18px;
+    }
     .mode-grid { grid-template-columns: 1fr; }
+  }
+
+  @media (min-width: 481px) {
+    .site-top {
+      flex-direction: row;
+      align-items: center;
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: 14px 18px;
+    }
+    .mem-entry {
+      flex: none;
+      min-width: 120px;
+    }
   }
   @media (max-width: 400px) {
     .countdown {
@@ -1091,14 +1134,15 @@
 
 <div id="particles"></div>
 
-<nav class="theme-switcher" aria-label="切换主题">
-  <button class="theme-btn active" data-set="strawberry"><span class="dot"></span>草莓奶油</button>
-  <button class="theme-btn" data-set="starry"><span class="dot"></span>星黛紫梦</button>
-  <button class="theme-btn" data-set="peach"><span class="dot"></span>蜜桃汽水</button>
-  <button class="theme-btn" data-set="mint"><span class="dot"></span>薄荷软糖</button>
-</nav>
-
-<button class="mem-entry" id="mem-open">📖 回忆</button>
+<header class="site-top">
+  <nav class="theme-switcher" aria-label="切换主题">
+    <button class="theme-btn active" data-set="strawberry"><span class="dot"></span>草莓奶油</button>
+    <button class="theme-btn" data-set="starry"><span class="dot"></span>星黛紫梦</button>
+    <button class="theme-btn" data-set="peach"><span class="dot"></span>蜜桃汽水</button>
+    <button class="theme-btn" data-set="mint"><span class="dot"></span>薄荷软糖</button>
+  </nav>
+  <button class="mem-entry" id="mem-open">📖 回忆</button>
+</header>
 
 <main>
   <span class="cake" id="cake" title="点我撒花!">🎂</span>
