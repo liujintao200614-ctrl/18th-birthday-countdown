@@ -950,6 +950,84 @@
     box-shadow: 0 20px 60px rgba(0,0,0,.5);
   }
 
+  /* ---- 标签输入(发布表单)---- */
+  .mem-tags-edit {
+    display: flex; flex-wrap: wrap; gap: 8px; align-items: center;
+    border: 2px solid var(--card-border);
+    border-radius: 14px;
+    padding: 8px 10px;
+    background: #fff;
+  }
+  .mem-tags-edit:focus-within { border-color: var(--accent); }
+  .mem-tags-input {
+    flex: 1; min-width: 100px;
+    border: none; outline: none; background: transparent;
+    font-family: var(--font-body); font-size: 14px; color: var(--text);
+    padding: 2px 0;
+  }
+  .mem-tag-chip {
+    display: inline-flex; align-items: center; gap: 4px;
+    background: var(--bar-track); color: var(--accent-deep);
+    font-family: var(--font-body); font-size: 13px;
+    padding: 3px 4px 3px 10px; border-radius: 999px;
+  }
+  .mem-tag-chip-x {
+    border: none; cursor: pointer; background: transparent;
+    color: var(--accent-deep); font-size: 10px; padding: 2px 4px; line-height: 1;
+    border-radius: 50%;
+  }
+  .mem-tag-chip-x:hover { background: rgba(0,0,0,.08); }
+
+  /* ---- 搜索框 ---- */
+  .mem-search {
+    display: flex; align-items: center; gap: 8px;
+    background: var(--card);
+    border: 2px solid var(--card-border);
+    border-radius: 999px;
+    padding: 8px 16px;
+    margin-bottom: 12px;
+    box-shadow: 0 6px 16px var(--shadow);
+  }
+  .mem-search:focus-within { border-color: var(--accent); }
+  .mem-search-ico { font-size: 14px; opacity: .7; }
+  .mem-search-input {
+    flex: 1; border: none; outline: none; background: transparent;
+    font-family: var(--font-body); font-size: 15px; color: var(--text);
+  }
+  .mem-search-clear {
+    border: none; cursor: pointer; background: var(--bar-track);
+    color: var(--text-soft); width: 20px; height: 20px; border-radius: 50%;
+    font-size: 11px; line-height: 20px; padding: 0; display: none;
+  }
+  .mem-search-clear:hover { color: var(--accent-deep); }
+
+  /* ---- 标签栏 ---- */
+  .mem-tagbar { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 18px; }
+  .mem-tagbar:empty { display: none; }
+  .tagbar-chip {
+    border: 1.5px solid var(--card-border); cursor: pointer;
+    background: var(--card); color: var(--text-soft);
+    font-family: var(--font-body); font-size: 13px;
+    padding: 4px 12px; border-radius: 999px;
+    transition: all .2s;
+  }
+  .tagbar-chip:hover { border-color: var(--accent); color: var(--accent-deep); }
+  .tagbar-chip.active {
+    background: var(--accent); border-color: var(--accent); color: #fff;
+  }
+
+  /* ---- 胶囊 / 阅读页里的标签 ---- */
+  .card-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+  .card-tag {
+    cursor: pointer;
+    background: var(--bar-track); color: var(--accent-deep);
+    font-family: var(--font-body); font-size: 12px;
+    padding: 2px 9px; border-radius: 999px;
+    transition: background .2s;
+  }
+  .card-tag:hover { background: var(--card-border); }
+  .reader-tags { margin-bottom: 16px; }
+
   /* 锁定态 */
   .mem-lock {
     background: var(--bar-track);
@@ -1109,6 +1187,13 @@
       </div>
 
       <div class="mem-field">
+        <label for="mem-tags-input">标签（可选,回车或逗号分隔)</label>
+        <div class="mem-tags-edit" id="mem-tags-edit">
+          <input class="mem-tags-input" id="mem-tags-input" type="text" maxlength="20" placeholder="如 生日、旅行、日常…" />
+        </div>
+      </div>
+
+      <div class="mem-field">
         <label>开启方式</label>
         <div class="mode-grid" id="mode-grid">
           <button type="button" class="mode-opt active" data-mode="public">
@@ -1161,6 +1246,14 @@
       </div>
       <p class="mem-form-msg" id="mem-form-msg"></p>
     </div>
+
+    <!-- 搜索 -->
+    <div class="mem-search" id="mem-search">
+      <span class="mem-search-ico">🔍</span>
+      <input class="mem-search-input" id="mem-search-input" type="text" placeholder="搜索标题、正文或 #标签…" />
+      <button class="mem-search-clear" id="mem-search-clear" type="button" aria-label="清除">✕</button>
+    </div>
+    <div class="mem-tagbar" id="mem-tagbar"></div>
 
     <!-- 时光轴 -->
     <div class="mem-list" id="mem-list"></div>
@@ -1604,6 +1697,48 @@
     imgAddBtn.textContent = pendingImages.length ? '＋ 继续添加' : '＋ 添加图片';
   }
 
+  /* ---- 标签选择 ---- */
+  let pendingTags = [];
+  const tagsEdit  = byId('mem-tags-edit');
+  const tagsInput = byId('mem-tags-input');
+  const MAX_TAGS  = 8;
+
+  function commitTag() {
+    const raw = tagsInput.value.trim().replace(/[,，#]/g, '');
+    if (!raw) { tagsInput.value = ''; return; }
+    if (pendingTags.length < MAX_TAGS &&
+        !pendingTags.some(t => t.toLowerCase() === raw.toLowerCase())) {
+      pendingTags.push(raw);
+    }
+    tagsInput.value = '';
+    renderTagChips();
+  }
+  tagsInput.addEventListener('keydown', e => {
+    if (e.key === 'Enter' || e.key === ',' || e.key === '，' || e.key === ' ') {
+      e.preventDefault(); commitTag();
+    } else if (e.key === 'Backspace' && !tagsInput.value && pendingTags.length) {
+      pendingTags.pop(); renderTagChips();
+    }
+  });
+  tagsInput.addEventListener('blur', commitTag);
+
+  function renderTagChips() {
+    tagsEdit.querySelectorAll('.mem-tag-chip').forEach(el => el.remove());
+    pendingTags.forEach((t, i) => {
+      const chip = document.createElement('span');
+      chip.className = 'mem-tag-chip';
+      chip.textContent = '#' + t;
+      const x = document.createElement('button');
+      x.type = 'button';
+      x.className = 'mem-tag-chip-x';
+      x.textContent = '✕';
+      x.addEventListener('click', () => { pendingTags.splice(i, 1); renderTagChips(); });
+      chip.appendChild(x);
+      tagsEdit.insertBefore(chip, tagsInput);
+    });
+    tagsInput.style.display = pendingTags.length >= MAX_TAGS ? 'none' : '';
+  }
+
   /* ---- 提交发布 ---- */
   byId('mem-submit').addEventListener('click', async () => {
     if (!supa) { formMsg.textContent = '还没配置好数据库,请稍后再试'; return; }
@@ -1616,6 +1751,7 @@
       p_title: byId('mem-title').value.trim() || null,
       p_question: null, p_answer: null, p_passphrase: null, p_unlock_at: null,
       p_images: [],
+      p_tags: (commitTag(), pendingTags.slice()),
     };
 
     if (currentMode === 'question') {
@@ -1651,6 +1787,8 @@
       byId('mem-unlock').value = '';
       pendingImages = [];
       renderImgPreview();
+      pendingTags = [];
+      renderTagChips();
       toggleCompose(false);
       burstConfetti(50);
       await loadMemories();
@@ -1662,9 +1800,15 @@
   });
 
   /* ---- 加载并渲染列表 ---- */
+  let allMemories = [];   // 全量数据(用于本地搜索)
+  let searchQuery = '';   // 当前搜索词
+
   async function loadMemories() {
     clearMemTimers();
     if (!supa) {
+      allMemories = [];
+      byId('mem-search').style.display = 'none';
+      byId('mem-tagbar').innerHTML = '';
       memListBox.classList.remove('has-items');
       memListBox.innerHTML = '';
       memListBox.appendChild(stateEl('回忆功能还没连接数据库~\n配置好 Supabase 后就能用啦'));
@@ -1674,21 +1818,105 @@
     memListBox.innerHTML = '';
     memListBox.appendChild(stateEl('加载中…'));
     try {
-      const items = await Memories.list();
-      memListBox.innerHTML = '';
-      if (!items.length) {
-        memListBox.classList.remove('has-items');
-        memListBox.appendChild(stateEl('还没有回忆呢,\n写下第一段吧 ✍️'));
-        return;
-      }
-      memListBox.classList.add('has-items');
-      items.forEach(m => memListBox.appendChild(renderRow(m)));
+      allMemories = await Memories.list();
+      renderTagbar();
+      applyFilter();
     } catch (err) {
+      allMemories = [];
+      byId('mem-search').style.display = 'none';
+      byId('mem-tagbar').innerHTML = '';
       memListBox.classList.remove('has-items');
       memListBox.innerHTML = '';
       memListBox.appendChild(stateEl('加载失败了 😢\n' + (err.message || '')));
     }
   }
+
+  /* ---- 搜索过滤 + 渲染 ---- */
+  function matchMemory(m, q) {
+    if (!q) return true;
+    const tags = (m.tags || []).map(t => String(t).toLowerCase());
+    if (q[0] === '#') {                 // #标签 精确/前缀匹配
+      const key = q.slice(1).trim();
+      return !key || tags.some(t => t.includes(key));
+    }
+    const hay = [
+      (m.title || ''),
+      (m.is_open ? (m.body || '') : ''), // 锁定的正文不参与搜索
+      tags.join(' '),
+    ].join(' ').toLowerCase();
+    return hay.includes(q);
+  }
+
+  function applyFilter() {
+    clearMemTimers();
+    const q = searchQuery.trim().toLowerCase();
+    const items = allMemories.filter(m => matchMemory(m, q));
+
+    byId('mem-search').style.display = allMemories.length ? '' : 'none';
+    byId('mem-search-clear').style.display = searchQuery ? '' : 'none';
+
+    memListBox.innerHTML = '';
+    if (!allMemories.length) {
+      memListBox.classList.remove('has-items');
+      memListBox.appendChild(stateEl('还没有回忆呢,\n写下第一段吧 ✍️'));
+      return;
+    }
+    if (!items.length) {
+      memListBox.classList.remove('has-items');
+      memListBox.appendChild(stateEl('没有匹配的回忆~\n换个词或标签试试'));
+      return;
+    }
+    memListBox.classList.add('has-items');
+    items.forEach(m => memListBox.appendChild(renderRow(m)));
+  }
+
+  /* ---- 标签栏(所有出现过的标签,点击即筛选)---- */
+  function renderTagbar() {
+    const bar = byId('mem-tagbar');
+    bar.innerHTML = '';
+    const seen = new Map(); // lower -> 原样
+    allMemories.forEach(m => (m.tags || []).forEach(t => {
+      const k = String(t).toLowerCase();
+      if (!seen.has(k)) seen.set(k, String(t));
+    }));
+    if (!seen.size) return;
+    seen.forEach(label => {
+      const chip = document.createElement('button');
+      chip.type = 'button';
+      chip.className = 'tagbar-chip';
+      chip.textContent = '#' + label;
+      chip.addEventListener('click', () => {
+        const val = '#' + label;
+        if (searchQuery.toLowerCase() === val.toLowerCase()) {
+          searchQuery = ''; byId('mem-search-input').value = '';
+        } else {
+          searchQuery = val; byId('mem-search-input').value = val;
+        }
+        syncTagbarActive();
+        applyFilter();
+      });
+      bar.appendChild(chip);
+    });
+    syncTagbarActive();
+  }
+  function syncTagbarActive() {
+    const q = searchQuery.trim().toLowerCase();
+    byId('mem-tagbar').querySelectorAll('.tagbar-chip').forEach(c => {
+      c.classList.toggle('active', c.textContent.toLowerCase() === q);
+    });
+  }
+
+  byId('mem-search-input').addEventListener('input', e => {
+    searchQuery = e.target.value;
+    syncTagbarActive();
+    applyFilter();
+  });
+  byId('mem-search-clear').addEventListener('click', () => {
+    searchQuery = '';
+    byId('mem-search-input').value = '';
+    syncTagbarActive();
+    applyFilter();
+  });
 
   function stateEl(text) {
     const d = document.createElement('div');
@@ -1734,6 +1962,10 @@
     hint.className = 'mem-hint';
     card.appendChild(hint);
 
+    if (m.tags && m.tags.length) {
+      card.appendChild(tagChipRow(m.tags));
+    }
+
     if (m.mode === 'timed' && !m.is_open) {
       // 未开启的时光胶囊:胶囊上显示实时倒计时
       const target = new Date(m.unlock_at).getTime();
@@ -1762,6 +1994,27 @@
     return row;
   }
 
+  /* 标签小胶囊(点击即按该标签筛选) */
+  function tagChipRow(tags, opts) {
+    const wrap = document.createElement('div');
+    wrap.className = 'card-tags';
+    tags.forEach(t => {
+      const chip = document.createElement('span');
+      chip.className = 'card-tag';
+      chip.textContent = '#' + t;
+      chip.addEventListener('click', e => {
+        e.stopPropagation();
+        if (opts && opts.closeReader) closeReader();
+        searchQuery = '#' + t;
+        byId('mem-search-input').value = searchQuery;
+        syncTagbarActive();
+        applyFilter();
+      });
+      wrap.appendChild(chip);
+    });
+    return wrap;
+  }
+
   /* ================= 回忆阅读页(胶囊内部) ================= */
   const reader = byId('mem-reader');
   let readerTimers = [];
@@ -1774,6 +2027,12 @@
       MODE_INFO[m.mode].icon + ' ' + MODE_INFO[m.mode].label + ' · ' + fmtTime(m.created_at);
     const content = byId('reader-content');
     content.innerHTML = '';
+
+    if (m.tags && m.tags.length) {
+      const tr = tagChipRow(m.tags, { closeReader: true });
+      tr.classList.add('reader-tags');
+      content.appendChild(tr);
+    }
 
     if (m.is_open) {
       content.appendChild(readerBody(m, m.body, m.images || [], null));

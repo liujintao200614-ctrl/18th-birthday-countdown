@@ -23,11 +23,13 @@ create table if not exists public.memories (
   passphrase  text,          -- 暗号模式:暗号
   unlock_at   timestamptz,   -- 定时模式:开启时间
   images      text[] not null default '{}',        -- 配图 URL(存于 Supabase Storage)
+  tags        text[] not null default '{}',        -- 标签
   meta        jsonb not null default '{}'::jsonb,  -- 预留扩展字段
   created_at  timestamptz not null default now()
 );
--- 已有旧表时补上 images 列
+-- 已有旧表时补上新列
 alter table public.memories add column if not exists images text[] not null default '{}';
+alter table public.memories add column if not exists tags   text[] not null default '{}';
 
 create index if not exists memories_created_at_idx on public.memories (created_at desc);
 
@@ -37,6 +39,7 @@ revoke all on public.memories from anon, authenticated;
 
 -- ---------- 发布一篇回忆 ----------
 drop function if exists public.create_memory(text,text,text,text,text,text,timestamptz);
+drop function if exists public.create_memory(text,text,text,text,text,text,timestamptz,text[]);
 create or replace function public.create_memory(
   p_body       text,
   p_mode       text default 'public',
@@ -45,7 +48,8 @@ create or replace function public.create_memory(
   p_answer     text default null,
   p_passphrase text default null,
   p_unlock_at  timestamptz default null,
-  p_images     text[] default '{}'
+  p_images     text[] default '{}',
+  p_tags       text[] default '{}'
 ) returns uuid
 language plpgsql
 security definer
@@ -54,6 +58,7 @@ as $$
 declare
   v_id uuid;
   v_imgs text[] := coalesce(p_images, '{}');
+  v_tags text[] := coalesce(p_tags, '{}');
 begin
   if (p_body is null or length(btrim(p_body)) = 0)
      and coalesce(array_length(v_imgs, 1), 0) = 0 then
@@ -64,6 +69,9 @@ begin
   end if;
   if coalesce(array_length(v_imgs, 1), 0) > 9 then
     raise exception '最多只能放 9 张图片';
+  end if;
+  if coalesce(array_length(v_tags, 1), 0) > 8 then
+    raise exception '标签最多 8 个';
   end if;
   if p_mode not in ('public','question','passphrase','timed') then
     raise exception '无效的开启方式';
@@ -81,7 +89,7 @@ begin
     raise exception '定时模式需要设置开启时间';
   end if;
 
-  insert into public.memories (title, body, mode, question, answer, passphrase, unlock_at, images)
+  insert into public.memories (title, body, mode, question, answer, passphrase, unlock_at, images, tags)
   values (
     nullif(btrim(p_title), ''),
     coalesce(p_body, ''),
@@ -90,7 +98,8 @@ begin
     case when p_mode = 'question' then lower(btrim(p_answer)) end,
     case when p_mode = 'passphrase' then p_passphrase end,
     case when p_mode = 'timed' then p_unlock_at end,
-    v_imgs
+    v_imgs,
+    v_tags
   )
   returning id into v_id;
 
@@ -112,7 +121,8 @@ returns table (
   is_open     boolean,       -- 是否已可查看
   body        text,          -- 仅在已开启时返回,否则为 null
   images      text[],        -- 仅在已开启时返回配图,否则为空
-  has_images  boolean        -- 是否含配图(锁定态也可显示 📷 标记)
+  has_images  boolean,       -- 是否含配图(锁定态也可显示 📷 标记)
+  tags        text[]         -- 标签(始终可见,便于搜索/筛选)
 )
 language sql
 security definer
@@ -137,7 +147,8 @@ as $$
       then m.images
       else '{}'::text[]
     end as images,
-    coalesce(array_length(m.images, 1), 0) > 0 as has_images
+    coalesce(array_length(m.images, 1), 0) > 0 as has_images,
+    m.tags
   from public.memories m
   order by m.created_at desc;
 $$;
@@ -306,7 +317,7 @@ as $$
 $$;
 
 -- ---------- 授权匿名角色调用这些函数 ----------
-grant execute on function public.create_memory(text,text,text,text,text,text,timestamptz,text[]) to anon, authenticated;
+grant execute on function public.create_memory(text,text,text,text,text,text,timestamptz,text[],text[]) to anon, authenticated;
 grant execute on function public.list_memories() to anon, authenticated;
 grant execute on function public.open_memory(uuid, text) to anon, authenticated;
 grant execute on function public.delete_memory(uuid, text) to anon, authenticated;
