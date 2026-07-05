@@ -462,6 +462,301 @@
     opacity: .75;
   }
 
+  /* ========== 回忆模块 ========== */
+  /* 入口按钮 */
+  .mem-entry {
+    position: fixed;
+    top: 22px; right: 22px;
+    z-index: 40;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-family: var(--font-display);
+    font-size: 14px;
+    color: var(--text);
+    background: rgba(255,255,255,.7);
+    backdrop-filter: blur(8px);
+    border: 2px solid var(--card-border);
+    border-radius: 999px;
+    padding: 8px 16px;
+    cursor: pointer;
+    box-shadow: 0 6px 18px var(--shadow);
+    transition: transform .2s, box-shadow .2s, border-color .5s;
+  }
+  .mem-entry:hover { transform: translateY(-2px) scale(1.04); }
+  .mem-entry:active { transform: scale(.96); }
+
+  /* 面板 */
+  .mem {
+    position: fixed; inset: 0; z-index: 90;
+    display: none;
+    justify-content: center;
+    align-items: flex-start;
+    overflow-y: auto;
+    padding: clamp(16px, 4vw, 40px) 16px 60px;
+    background:
+      radial-gradient(circle at 20% 0%, var(--bg-a) 0%, transparent 55%),
+      radial-gradient(circle at 90% 100%, var(--bg-b) 0%, transparent 55%),
+      var(--bg-c);
+  }
+  .mem.show { display: flex; animation: fadeIn .4s ease both; }
+
+  .mem-panel { width: min(680px, 100%); position: relative; }
+
+  .mem-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin: 6px 2px 4px;
+  }
+  .mem-head h2 {
+    font-family: var(--font-display);
+    font-size: clamp(24px, 5vw, 34px);
+    color: var(--accent-deep);
+  }
+  .mem-close {
+    border: none; cursor: pointer;
+    width: 40px; height: 40px;
+    border-radius: 50%;
+    background: rgba(255,255,255,.7);
+    border: 2px solid var(--card-border);
+    color: var(--text-soft);
+    font-size: 20px;
+    line-height: 1;
+    transition: transform .2s;
+  }
+  .mem-close:hover { transform: rotate(90deg) scale(1.05); color: var(--text); }
+  .mem-intro {
+    font-family: var(--font-display);
+    color: var(--text-soft);
+    font-size: 14px;
+    margin: 0 2px 18px;
+    line-height: 1.7;
+  }
+
+  .mem-new-btn {
+    width: 100%;
+    border: 2px dashed var(--card-border);
+    background: rgba(255,255,255,.55);
+    color: var(--accent-deep);
+    font-family: var(--font-display);
+    font-size: 16px;
+    padding: 16px;
+    border-radius: 22px;
+    cursor: pointer;
+    margin-bottom: 20px;
+    transition: background .3s, transform .2s, border-color .3s;
+  }
+  .mem-new-btn:hover { background: rgba(255,255,255,.85); transform: translateY(-2px); }
+
+  /* 通用输入控件 */
+  .mem-field { margin-bottom: 14px; }
+  .mem-field label {
+    display: block;
+    font-family: var(--font-display);
+    font-size: 14px;
+    color: var(--text-soft);
+    margin-bottom: 6px;
+  }
+  .mem-input, .mem-textarea {
+    width: 100%;
+    font-family: var(--font-body);
+    font-size: 15px;
+    color: var(--text);
+    background: #fff;
+    border: 2px solid var(--card-border);
+    border-radius: 16px;
+    padding: 12px 14px;
+    outline: none;
+    transition: border-color .25s, box-shadow .25s;
+  }
+  .mem-input:focus, .mem-textarea:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 4px var(--bar-track);
+  }
+  .mem-textarea { resize: vertical; min-height: 120px; line-height: 1.7; }
+
+  /* 发布表单卡片 */
+  .mem-compose {
+    display: none;
+    background: var(--card);
+    border: 3px solid var(--card-border);
+    border-radius: 26px;
+    padding: clamp(18px, 3.5vw, 28px);
+    box-shadow: 0 14px 34px var(--shadow);
+    margin-bottom: 24px;
+  }
+  .mem-compose.open { display: block; animation: rise .4s ease both; }
+
+  /* 开启方式选择 */
+  .mode-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+    margin-bottom: 4px;
+  }
+  .mode-opt {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    text-align: left;
+    font-family: var(--font-body);
+    font-size: 14px;
+    color: var(--text);
+    background: #fff;
+    border: 2px solid var(--card-border);
+    border-radius: 16px;
+    padding: 12px;
+    cursor: pointer;
+    transition: all .2s;
+  }
+  .mode-opt .mo-ico { font-size: 20px; }
+  .mode-opt .mo-txt b { display: block; font-family: var(--font-display); }
+  .mode-opt .mo-txt small { color: var(--text-soft); font-size: 12px; }
+  .mode-opt:hover { transform: translateY(-2px); }
+  .mode-opt.active {
+    border-color: var(--accent);
+    background: var(--bar-track);
+    box-shadow: 0 4px 12px var(--shadow);
+  }
+
+  .mode-extra { display: none; margin-top: 14px; }
+  .mode-extra.open { display: block; animation: fadeIn .3s ease both; }
+
+  .mem-form-actions { display: flex; gap: 10px; margin-top: 18px; }
+  .mem-btn {
+    flex: 1;
+    border: none; cursor: pointer;
+    font-family: var(--font-display);
+    font-size: 16px;
+    padding: 13px;
+    border-radius: 999px;
+    transition: transform .2s, box-shadow .2s, opacity .2s;
+  }
+  .mem-btn.primary { color: #fff; background: var(--accent); box-shadow: 0 8px 20px var(--shadow); }
+  .mem-btn.ghost { color: var(--text-soft); background: var(--bar-track); }
+  .mem-btn:hover { transform: translateY(-2px); }
+  .mem-btn:active { transform: scale(.97); }
+  .mem-btn[disabled] { opacity: .5; cursor: default; transform: none; }
+  .mem-form-msg { font-family: var(--font-display); font-size: 13px; margin-top: 10px; min-height: 18px; color: #e0447a; text-align: center; }
+
+  /* 回忆时光轴 */
+  .mem-list { position: relative; display: flex; flex-direction: column; gap: 24px; }
+  .mem-state {
+    text-align: center;
+    font-family: var(--font-display);
+    color: var(--text-soft);
+    padding: 40px 10px;
+    line-height: 1.8;
+  }
+  /* 竖向时间线(仅有回忆时显示) */
+  .mem-list.has-items { padding-left: 36px; }
+  .mem-list.has-items::before {
+    content: '';
+    position: absolute;
+    left: 9px; top: 8px; bottom: 8px;
+    width: 3px;
+    border-radius: 3px;
+    background: linear-gradient(var(--card-border), var(--accent) 40%, var(--accent) 60%, var(--card-border));
+    opacity: .8;
+  }
+  .mem-card {
+    position: relative;
+    background: var(--card);
+    border: 2px solid var(--card-border);
+    border-radius: 22px;
+    padding: clamp(16px, 3vw, 24px);
+    box-shadow: 0 10px 26px var(--shadow);
+    animation: rise .4s ease both;
+  }
+  /* 时间线节点(圆点) */
+  .mem-list.has-items .mem-card::before {
+    content: '';
+    position: absolute;
+    left: -32px; top: 22px;
+    width: 15px; height: 15px;
+    border-radius: 50%;
+    background: var(--accent);
+    border: 3px solid var(--card);
+    box-shadow: 0 0 0 3px var(--card-border);
+  }
+  /* 指向卡片的小箭头,增强时间线连接感 */
+  .mem-list.has-items .mem-card::after {
+    content: '';
+    position: absolute;
+    left: -8px; top: 25px;
+    width: 12px; height: 12px;
+    background: var(--card);
+    border-left: 2px solid var(--card-border);
+    border-bottom: 2px solid var(--card-border);
+    transform: rotate(45deg);
+  }
+  .mem-card-top {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 10px;
+    margin-bottom: 4px;
+  }
+  .mem-card-title {
+    font-family: var(--font-display);
+    font-size: clamp(17px, 3vw, 21px);
+    color: var(--accent-deep);
+  }
+  .mem-tag {
+    flex: none;
+    font-family: var(--font-display);
+    font-size: 12px;
+    color: var(--text-soft);
+    background: var(--bar-track);
+    border-radius: 999px;
+    padding: 3px 10px;
+    white-space: nowrap;
+  }
+  .mem-time { font-size: 12px; color: var(--text-soft); margin-bottom: 12px; }
+  .mem-body {
+    font-family: var(--font-body);
+    font-size: 15px;
+    color: var(--text);
+    line-height: 1.85;
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+
+  /* 锁定态 */
+  .mem-lock {
+    background: var(--bar-track);
+    border-radius: 16px;
+    padding: 16px;
+  }
+  .mem-lock .lock-q {
+    font-family: var(--font-display);
+    color: var(--text);
+    margin-bottom: 10px;
+    line-height: 1.6;
+  }
+  .mem-lock-row { display: flex; gap: 8px; }
+  .mem-lock-row .mem-input { flex: 1; background: #fff; }
+  .mem-lock-btn {
+    flex: none;
+    border: none; cursor: pointer;
+    font-family: var(--font-display);
+    color: #fff;
+    background: var(--accent);
+    padding: 0 18px;
+    border-radius: 14px;
+    transition: transform .2s;
+  }
+  .mem-lock-btn:hover { transform: translateY(-2px); }
+  .mem-lock-btn:active { transform: scale(.96); }
+  .mem-lock-msg { font-size: 12px; color: #e0447a; margin-top: 8px; min-height: 14px; }
+  .mem-timer {
+    font-family: var(--font-num);
+    font-weight: 800;
+    color: var(--accent-deep);
+    font-size: 18px;
+  }
+
   /* ---------- 手机适配 ---------- */
   @media (max-width: 480px) {
     .theme-switcher {
@@ -472,6 +767,8 @@
     }
     .theme-btn { font-size: 12px; padding: 6px 8px; gap: 4px; }
     .theme-btn .dot { width: 11px; height: 11px; }
+    .mem-entry { top: 14px; right: 14px; font-size: 13px; padding: 7px 12px; }
+    .mode-grid { grid-template-columns: 1fr; }
   }
   @media (max-width: 400px) {
     .countdown {
@@ -495,6 +792,8 @@
   <button class="theme-btn" data-set="peach"><span class="dot"></span>蜜桃汽水</button>
   <button class="theme-btn" data-set="mint"><span class="dot"></span>薄荷软糖</button>
 </nav>
+
+<button class="mem-entry" id="mem-open">📖 回忆</button>
 
 <main>
   <span class="cake" id="cake" title="点我撒花!">🎂</span>
@@ -553,6 +852,88 @@
   </div>
 </div>
 
+<!-- ========== 回忆面板 ========== -->
+<div class="mem" id="mem">
+  <div class="mem-panel">
+    <div class="mem-head">
+      <h2>📖 回忆</h2>
+      <button class="mem-close" id="mem-close" aria-label="关闭">✕</button>
+    </div>
+    <p class="mem-intro">写下想说的话,选择一种开启方式,让回忆在对的时刻被看见。</p>
+
+    <button class="mem-new-btn" id="mem-new">＋ 写一段回忆</button>
+
+    <!-- 发布表单 -->
+    <div class="mem-compose" id="mem-compose">
+      <div class="mem-field">
+        <label for="mem-title">标题（可选）</label>
+        <input class="mem-input" id="mem-title" type="text" maxlength="60" placeholder="给这段回忆起个名字…" />
+      </div>
+      <div class="mem-field">
+        <label for="mem-body">正文</label>
+        <textarea class="mem-textarea" id="mem-body" maxlength="20000" placeholder="想说的话都写在这里吧…"></textarea>
+      </div>
+
+      <div class="mem-field">
+        <label>开启方式</label>
+        <div class="mode-grid" id="mode-grid">
+          <button type="button" class="mode-opt active" data-mode="public">
+            <span class="mo-ico">🌍</span>
+            <span class="mo-txt"><b>公开</b><small>谁都能看</small></span>
+          </button>
+          <button type="button" class="mode-opt" data-mode="question">
+            <span class="mo-ico">❓</span>
+            <span class="mo-txt"><b>问题</b><small>答对才能看</small></span>
+          </button>
+          <button type="button" class="mode-opt" data-mode="passphrase">
+            <span class="mo-ico">🔑</span>
+            <span class="mo-txt"><b>暗号</b><small>对暗号才能看</small></span>
+          </button>
+          <button type="button" class="mode-opt" data-mode="timed">
+            <span class="mo-ico">⏰</span>
+            <span class="mo-txt"><b>定时</b><small>到点自动开</small></span>
+          </button>
+        </div>
+      </div>
+
+      <div class="mode-extra" id="extra-question">
+        <div class="mem-field">
+          <label for="mem-question">问题</label>
+          <input class="mem-input" id="mem-question" type="text" maxlength="120" placeholder="例如:我们第一次见面在哪里?" />
+        </div>
+        <div class="mem-field">
+          <label for="mem-answer">答案（不区分大小写）</label>
+          <input class="mem-input" id="mem-answer" type="text" maxlength="120" placeholder="正确答案" />
+        </div>
+      </div>
+
+      <div class="mode-extra" id="extra-passphrase">
+        <div class="mem-field">
+          <label for="mem-passphrase">暗号</label>
+          <input class="mem-input" id="mem-passphrase" type="text" maxlength="120" placeholder="设置一句只有你们懂的暗号" />
+        </div>
+      </div>
+
+      <div class="mode-extra" id="extra-timed">
+        <div class="mem-field">
+          <label for="mem-unlock">开启时间</label>
+          <input class="mem-input" id="mem-unlock" type="datetime-local" />
+        </div>
+      </div>
+
+      <div class="mem-form-actions">
+        <button class="mem-btn ghost" id="mem-cancel" type="button">取消</button>
+        <button class="mem-btn primary" id="mem-submit" type="button">发布</button>
+      </div>
+      <p class="mem-form-msg" id="mem-form-msg"></p>
+    </div>
+
+    <!-- 列表 -->
+    <div class="mem-list" id="mem-list"></div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
   /* ================= 配置 ================= */
   const TARGET = new Date('2026-09-28T00:00:00+08:00'); // 18 岁生日
@@ -823,6 +1204,292 @@
   nameEl.addEventListener('keydown', e => {
     if (e.key === 'Enter') { e.preventDefault(); nameEl.blur(); }
   });
+
+  /* ================= 回忆模块 ================= */
+  /* ---- Supabase 配置 ---- */
+  const SUPABASE_URL = 'https://gvlyyhqiqqkjmqahxdjp.supabase.co';
+  const SUPABASE_ANON_KEY = 'sb_publishable_kaG-4CCp_neFV_KvLBLZYQ_ZtoVyWfw';
+
+  const supaReady =
+    window.supabase &&
+    !SUPABASE_URL.includes('YOUR-PROJECT') &&
+    !SUPABASE_ANON_KEY.includes('YOUR-ANON-KEY');
+  const supa = supaReady
+    ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+    : null;
+
+  /* ---- 数据层:以后加图片/评论/时光胶囊都在这里扩展 ---- */
+  const Memories = {
+    async list() {
+      const { data, error } = await supa.rpc('list_memories');
+      if (error) throw error;
+      return data || [];
+    },
+    async create(payload) {
+      const { data, error } = await supa.rpc('create_memory', payload);
+      if (error) throw error;
+      return data;
+    },
+    async open(id, secret) {
+      const { data, error } = await supa.rpc('open_memory', { p_id: id, p_secret: secret ?? null });
+      if (error) throw error;
+      return data;
+    },
+  };
+
+  const MODE_INFO = {
+    public:     { icon: '🌍', label: '公开' },
+    question:   { icon: '❓', label: '问题' },
+    passphrase: { icon: '🔑', label: '暗号' },
+    timed:      { icon: '⏰', label: '定时' },
+  };
+
+  const memPanel   = byId('mem');
+  const memListBox = byId('mem-list');
+  const composeBox = byId('mem-compose');
+  const formMsg    = byId('mem-form-msg');
+  let currentMode  = 'public';
+  let memTimers    = []; // 定时卡片的倒计时器
+
+  function clearMemTimers() { memTimers.forEach(clearInterval); memTimers = []; }
+
+  function fmtTime(iso) {
+    const d = new Date(iso);
+    return d.toLocaleString('zh-CN', {
+      year: 'numeric', month: '2-digit', day: '2-digit',
+      hour: '2-digit', minute: '2-digit',
+    });
+  }
+
+  /* ---- 打开 / 关闭面板 ---- */
+  function openMemories() {
+    memPanel.classList.add('show');
+    loadMemories();
+  }
+  function closeMemories() {
+    memPanel.classList.remove('show');
+    clearMemTimers();
+  }
+  byId('mem-open').addEventListener('click', openMemories);
+  byId('mem-close').addEventListener('click', closeMemories);
+  memPanel.addEventListener('click', e => { if (e.target === memPanel) closeMemories(); });
+
+  /* ---- 发布表单开关 ---- */
+  function toggleCompose(open) {
+    composeBox.classList.toggle('open', open);
+    if (open) { formMsg.textContent = ''; byId('mem-body').focus(); }
+  }
+  byId('mem-new').addEventListener('click', () => toggleCompose(!composeBox.classList.contains('open')));
+  byId('mem-cancel').addEventListener('click', () => toggleCompose(false));
+
+  /* ---- 开启方式选择 ---- */
+  byId('mode-grid').addEventListener('click', e => {
+    const opt = e.target.closest('.mode-opt');
+    if (!opt) return;
+    currentMode = opt.dataset.mode;
+    document.querySelectorAll('.mode-opt').forEach(o => o.classList.toggle('active', o === opt));
+    byId('extra-question').classList.toggle('open', currentMode === 'question');
+    byId('extra-passphrase').classList.toggle('open', currentMode === 'passphrase');
+    byId('extra-timed').classList.toggle('open', currentMode === 'timed');
+  });
+
+  /* ---- 提交发布 ---- */
+  byId('mem-submit').addEventListener('click', async () => {
+    if (!supa) { formMsg.textContent = '还没配置好数据库,请稍后再试'; return; }
+    const body = byId('mem-body').value.trim();
+    if (!body) { formMsg.textContent = '正文不能为空哦'; return; }
+
+    const payload = {
+      p_body: body,
+      p_mode: currentMode,
+      p_title: byId('mem-title').value.trim() || null,
+      p_question: null, p_answer: null, p_passphrase: null, p_unlock_at: null,
+    };
+
+    if (currentMode === 'question') {
+      payload.p_question = byId('mem-question').value.trim();
+      payload.p_answer = byId('mem-answer').value.trim();
+      if (!payload.p_question || !payload.p_answer) { formMsg.textContent = '请填写问题和答案'; return; }
+    } else if (currentMode === 'passphrase') {
+      payload.p_passphrase = byId('mem-passphrase').value.trim();
+      if (!payload.p_passphrase) { formMsg.textContent = '请设置暗号'; return; }
+    } else if (currentMode === 'timed') {
+      const v = byId('mem-unlock').value;
+      if (!v) { formMsg.textContent = '请选择开启时间'; return; }
+      payload.p_unlock_at = new Date(v).toISOString();
+    }
+
+    const btn = byId('mem-submit');
+    btn.disabled = true; btn.textContent = '发布中…'; formMsg.textContent = '';
+    try {
+      await Memories.create(payload);
+      // 重置表单
+      byId('mem-title').value = '';
+      byId('mem-body').value = '';
+      byId('mem-question').value = '';
+      byId('mem-answer').value = '';
+      byId('mem-passphrase').value = '';
+      byId('mem-unlock').value = '';
+      toggleCompose(false);
+      burstConfetti(50);
+      await loadMemories();
+    } catch (err) {
+      formMsg.textContent = err.message || '发布失败,请重试';
+    } finally {
+      btn.disabled = false; btn.textContent = '发布';
+    }
+  });
+
+  /* ---- 加载并渲染列表 ---- */
+  async function loadMemories() {
+    clearMemTimers();
+    if (!supa) {
+      memListBox.classList.remove('has-items');
+      memListBox.innerHTML = '';
+      memListBox.appendChild(stateEl('回忆功能还没连接数据库~\n配置好 Supabase 后就能用啦'));
+      return;
+    }
+    memListBox.classList.remove('has-items');
+    memListBox.innerHTML = '';
+    memListBox.appendChild(stateEl('加载中…'));
+    try {
+      const items = await Memories.list();
+      memListBox.innerHTML = '';
+      if (!items.length) {
+        memListBox.classList.remove('has-items');
+        memListBox.appendChild(stateEl('还没有回忆呢,\n写下第一段吧 ✍️'));
+        return;
+      }
+      memListBox.classList.add('has-items');
+      items.forEach(m => memListBox.appendChild(renderCard(m)));
+    } catch (err) {
+      memListBox.classList.remove('has-items');
+      memListBox.innerHTML = '';
+      memListBox.appendChild(stateEl('加载失败了 😢\n' + (err.message || '')));
+    }
+  }
+
+  function stateEl(text) {
+    const d = document.createElement('div');
+    d.className = 'mem-state';
+    d.textContent = text;
+    return d;
+  }
+
+  /* ---- 单张回忆卡片 ---- */
+  function renderCard(m) {
+    const card = document.createElement('div');
+    card.className = 'mem-card';
+
+    const top = document.createElement('div');
+    top.className = 'mem-card-top';
+    const title = document.createElement('div');
+    title.className = 'mem-card-title';
+    title.textContent = m.title || '一段回忆';
+    const tag = document.createElement('span');
+    tag.className = 'mem-tag';
+    tag.textContent = MODE_INFO[m.mode].icon + ' ' + MODE_INFO[m.mode].label;
+    top.appendChild(title);
+    top.appendChild(tag);
+    card.appendChild(top);
+
+    const time = document.createElement('div');
+    time.className = 'mem-time';
+    time.textContent = fmtTime(m.created_at);
+    card.appendChild(time);
+
+    if (m.is_open) {
+      card.appendChild(bodyEl(m.body));
+    } else {
+      card.appendChild(lockEl(m, card));
+    }
+    return card;
+  }
+
+  function bodyEl(text) {
+    const b = document.createElement('div');
+    b.className = 'mem-body';
+    b.textContent = text;
+    return b;
+  }
+
+  /* ---- 锁定态:问题 / 暗号 / 定时 ---- */
+  function lockEl(m, card) {
+    const box = document.createElement('div');
+    box.className = 'mem-lock';
+
+    if (m.mode === 'timed') {
+      const info = document.createElement('div');
+      info.className = 'lock-q';
+      const timer = document.createElement('div');
+      timer.className = 'mem-timer';
+      info.innerHTML = '⏰ 将于 ' + fmtTime(m.unlock_at) + ' 开启';
+      box.appendChild(info);
+      box.appendChild(timer);
+      const target = new Date(m.unlock_at).getTime();
+      const upd = async () => {
+        const left = target - Date.now();
+        if (left <= 0) {
+          timer.textContent = '正在开启…';
+          try {
+            const body = await Memories.open(m.id, null);
+            card.replaceChild(bodyEl(body), box);
+          } catch (_) { loadMemories(); }
+          return;
+        }
+        const dd = Math.floor(left / 86400000);
+        const hh = Math.floor(left / 3600000) % 24;
+        const mm = Math.floor(left / 60000) % 60;
+        const ss = Math.floor(left / 1000) % 60;
+        timer.textContent = (dd ? dd + ' 天 ' : '') + pad(hh) + ':' + pad(mm) + ':' + pad(ss);
+      };
+      upd();
+      memTimers.push(setInterval(upd, 1000));
+      return box;
+    }
+
+    // 问题 / 暗号
+    const q = document.createElement('div');
+    q.className = 'lock-q';
+    q.textContent = m.mode === 'question'
+      ? '❓ ' + (m.question || '回答问题即可查看')
+      : '🔑 输入暗号即可查看';
+    box.appendChild(q);
+
+    const row = document.createElement('div');
+    row.className = 'mem-lock-row';
+    const input = document.createElement('input');
+    input.className = 'mem-input';
+    input.type = 'text';
+    input.placeholder = m.mode === 'question' ? '你的答案' : '暗号';
+    const btn = document.createElement('button');
+    btn.className = 'mem-lock-btn';
+    btn.textContent = '查看';
+    row.appendChild(input);
+    row.appendChild(btn);
+    box.appendChild(row);
+
+    const msg = document.createElement('div');
+    msg.className = 'mem-lock-msg';
+    box.appendChild(msg);
+
+    const tryOpen = async () => {
+      const secret = input.value.trim();
+      if (!secret) { msg.textContent = m.mode === 'question' ? '请输入答案' : '请输入暗号'; return; }
+      btn.disabled = true; msg.textContent = '';
+      try {
+        const body = await Memories.open(m.id, secret);
+        card.replaceChild(bodyEl(body), box);
+        burstConfetti(40);
+      } catch (err) {
+        msg.textContent = err.message || '不对哦';
+        btn.disabled = false;
+      }
+    };
+    btn.addEventListener('click', tryOpen);
+    input.addEventListener('keydown', e => { if (e.key === 'Enter') tryOpen(); });
+    return box;
+  }
 
   /* ================= 初始化 ================= */
   setTheme(localStorage.getItem('bday-theme') || 'strawberry');
