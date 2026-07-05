@@ -881,6 +881,75 @@
   }
   .comment-cancel:hover { color: var(--accent-deep); }
 
+  /* ---- 配图选择器 ---- */
+  .mem-img-picker { display: flex; flex-wrap: wrap; gap: 8px; }
+  .mem-img-picker:empty { display: none; }
+  .mem-img-cell {
+    position: relative;
+    width: 72px; height: 72px;
+    border-radius: 12px;
+    overflow: hidden;
+    border: 2px solid var(--card-border);
+  }
+  .mem-img-cell img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .mem-img-del {
+    position: absolute; top: 2px; right: 2px;
+    width: 20px; height: 20px; border: none; cursor: pointer;
+    border-radius: 50%;
+    background: rgba(0,0,0,.55); color: #fff;
+    font-size: 11px; line-height: 20px; text-align: center; padding: 0;
+  }
+  .mem-img-add {
+    margin-top: 8px;
+    border: 1.5px dashed var(--card-border);
+    background: transparent;
+    color: var(--accent-deep);
+    font-family: var(--font-body); font-size: 14px;
+    padding: 8px 16px; border-radius: 12px; cursor: pointer;
+    transition: background .2s, border-color .2s;
+  }
+  .mem-img-add:hover { background: var(--bar-track); border-color: var(--accent); }
+
+  /* ---- 阅读页配图 ---- */
+  .reader-gallery {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 6px;
+    margin-bottom: 16px;
+  }
+  .reader-gallery.single { grid-template-columns: 1fr; }
+  .gallery-cell {
+    position: relative;
+    border-radius: 12px;
+    overflow: hidden;
+    aspect-ratio: 1 / 1;
+    background: var(--bar-track);
+  }
+  .reader-gallery.single .gallery-cell { aspect-ratio: auto; max-height: 60vh; }
+  .gallery-cell img {
+    width: 100%; height: 100%;
+    object-fit: cover; display: block; cursor: zoom-in;
+    transition: transform .2s;
+  }
+  .reader-gallery.single .gallery-cell img { object-fit: contain; }
+  .gallery-cell img:hover { transform: scale(1.03); }
+
+  /* ---- 图片放大 ---- */
+  .lightbox {
+    position: fixed; inset: 0; z-index: 120;
+    display: flex; align-items: center; justify-content: center;
+    padding: 20px;
+    background: rgba(0,0,0,.86);
+    cursor: zoom-out;
+    opacity: 0; transition: opacity .25s;
+  }
+  .lightbox.show { opacity: 1; }
+  .lightbox img {
+    max-width: 100%; max-height: 100%;
+    border-radius: 10px;
+    box-shadow: 0 20px 60px rgba(0,0,0,.5);
+  }
+
   /* 锁定态 */
   .mem-lock {
     background: var(--bar-track);
@@ -1030,6 +1099,13 @@
       <div class="mem-field">
         <label for="mem-body">正文</label>
         <textarea class="mem-textarea" id="mem-body" maxlength="20000" placeholder="想说的话都写在这里吧…"></textarea>
+      </div>
+
+      <div class="mem-field">
+        <label>配图（可选,最多 9 张）</label>
+        <div class="mem-img-picker" id="mem-img-preview"></div>
+        <button type="button" class="mem-img-add" id="mem-img-add">＋ 添加图片</button>
+        <input type="file" id="mem-img-input" accept="image/*" multiple hidden />
       </div>
 
       <div class="mem-field">
@@ -1403,7 +1479,17 @@
     async open(id, secret) {
       const { data, error } = await supa.rpc('open_memory', { p_id: id, p_secret: secret ?? null });
       if (error) throw error;
-      return data;
+      // 兼容:旧版返回纯文本,新版返回 { body, images }
+      if (data && typeof data === 'object') return { body: data.body || '', images: data.images || [] };
+      return { body: data || '', images: [] };
+    },
+    async uploadImage(file) {
+      const ext = (file.name.split('.').pop() || 'jpg').toLowerCase().replace(/[^a-z0-9]/g, '') || 'jpg';
+      const path = Date.now() + '-' + Math.random().toString(36).slice(2, 8) + '.' + ext;
+      const { error } = await supa.storage.from('memory-images')
+        .upload(path, file, { cacheControl: '3600', upsert: false, contentType: file.type });
+      if (error) throw error;
+      return supa.storage.from('memory-images').getPublicUrl(path).data.publicUrl;
     },
     async remove(id, secret) {
       const { error } = await supa.rpc('delete_memory', { p_id: id, p_secret: secret ?? null });
@@ -1480,17 +1566,56 @@
     byId('extra-timed').classList.toggle('open', currentMode === 'timed');
   });
 
+  /* ---- 配图选择 ---- */
+  let pendingImages = []; // 待上传的 File[]
+  const imgInput   = byId('mem-img-input');
+  const imgPreview = byId('mem-img-preview');
+  const imgAddBtn  = byId('mem-img-add');
+  const MAX_IMAGES = 9;
+
+  imgAddBtn.addEventListener('click', () => imgInput.click());
+  imgInput.addEventListener('change', () => {
+    for (const f of imgInput.files) {
+      if (pendingImages.length >= MAX_IMAGES) break;
+      if (!f.type.startsWith('image/')) continue;
+      pendingImages.push(f);
+    }
+    imgInput.value = '';
+    renderImgPreview();
+  });
+
+  function renderImgPreview() {
+    imgPreview.innerHTML = '';
+    pendingImages.forEach((f, i) => {
+      const cell = document.createElement('div');
+      cell.className = 'mem-img-cell';
+      const img = document.createElement('img');
+      img.src = URL.createObjectURL(f);
+      const del = document.createElement('button');
+      del.type = 'button';
+      del.className = 'mem-img-del';
+      del.textContent = '✕';
+      del.addEventListener('click', () => { pendingImages.splice(i, 1); renderImgPreview(); });
+      cell.appendChild(img);
+      cell.appendChild(del);
+      imgPreview.appendChild(cell);
+    });
+    imgAddBtn.style.display = pendingImages.length >= MAX_IMAGES ? 'none' : '';
+    imgAddBtn.textContent = pendingImages.length ? '＋ 继续添加' : '＋ 添加图片';
+  }
+
   /* ---- 提交发布 ---- */
   byId('mem-submit').addEventListener('click', async () => {
     if (!supa) { formMsg.textContent = '还没配置好数据库,请稍后再试'; return; }
     const body = byId('mem-body').value.trim();
-    if (!body) { formMsg.textContent = '正文不能为空哦'; return; }
+    if (!body && !pendingImages.length) { formMsg.textContent = '写点文字,或者加张图片吧'; return; }
 
     const payload = {
       p_body: body,
       p_mode: currentMode,
       p_title: byId('mem-title').value.trim() || null,
       p_question: null, p_answer: null, p_passphrase: null, p_unlock_at: null,
+      p_images: [],
     };
 
     if (currentMode === 'question') {
@@ -1507,8 +1632,15 @@
     }
 
     const btn = byId('mem-submit');
-    btn.disabled = true; btn.textContent = '发布中…'; formMsg.textContent = '';
+    btn.disabled = true; formMsg.textContent = '';
     try {
+      if (pendingImages.length) {
+        for (let i = 0; i < pendingImages.length; i++) {
+          btn.textContent = '上传图片 ' + (i + 1) + '/' + pendingImages.length + '…';
+          payload.p_images.push(await Memories.uploadImage(pendingImages[i]));
+        }
+      }
+      btn.textContent = '发布中…';
       await Memories.create(payload);
       // 重置表单
       byId('mem-title').value = '';
@@ -1517,6 +1649,8 @@
       byId('mem-answer').value = '';
       byId('mem-passphrase').value = '';
       byId('mem-unlock').value = '';
+      pendingImages = [];
+      renderImgPreview();
       toggleCompose(false);
       burstConfetti(50);
       await loadMemories();
@@ -1615,11 +1749,12 @@
       upd();
       memTimers.push(setInterval(upd, 1000));
     } else if (m.is_open) {
-      hint.innerHTML = '轻触展开阅读 <span class="go">→</span>';
+      const pic = (m.images && m.images.length) ? '📷 ' + m.images.length + ' 张 · ' : '';
+      hint.innerHTML = pic + '轻触展开阅读 <span class="go">→</span>';
     } else if (m.mode === 'question') {
-      hint.textContent = '❓ 需要回答问题 · 轻触开启';
+      hint.textContent = (m.has_images ? '📷 ' : '') + '❓ 需要回答问题 · 轻触开启';
     } else if (m.mode === 'passphrase') {
-      hint.textContent = '🔑 需要暗号 · 轻触开启';
+      hint.textContent = (m.has_images ? '📷 ' : '') + '🔑 需要暗号 · 轻触开启';
     }
 
     card.addEventListener('click', () => openReader(m));
@@ -1641,7 +1776,7 @@
     content.innerHTML = '';
 
     if (m.is_open) {
-      content.appendChild(readerBody(m, m.body, null));
+      content.appendChild(readerBody(m, m.body, m.images || [], null));
     } else if (m.mode === 'timed') {
       content.appendChild(readerTimed(m, content));
     } else {
@@ -1657,13 +1792,20 @@
   byId('reader-close').addEventListener('click', closeReader);
   reader.addEventListener('click', e => { if (e.target === reader) closeReader(); });
 
-  /* 正文 + 删除 */
-  function readerBody(m, text, secret) {
+  /* 正文 + 配图 + 删除 */
+  function readerBody(m, text, images, secret) {
     const wrap = document.createElement('div');
-    const body = document.createElement('div');
-    body.className = 'reader-body';
-    body.textContent = text;
-    wrap.appendChild(body);
+
+    if (images && images.length) {
+      wrap.appendChild(imageGallery(images));
+    }
+
+    if (text) {
+      const body = document.createElement('div');
+      body.className = 'reader-body';
+      body.textContent = text;
+      wrap.appendChild(body);
+    }
 
     const row = document.createElement('div');
     row.className = 'mem-actions-row';
@@ -1690,6 +1832,35 @@
     // 评论区
     wrap.appendChild(commentsEl(m));
     return wrap;
+  }
+
+  /* 配图九宫格 + 点击放大 */
+  function imageGallery(images) {
+    const grid = document.createElement('div');
+    grid.className = 'reader-gallery' + (images.length === 1 ? ' single' : '');
+    images.forEach(url => {
+      const cell = document.createElement('div');
+      cell.className = 'gallery-cell';
+      const img = document.createElement('img');
+      img.src = url;
+      img.loading = 'lazy';
+      img.alt = '回忆配图';
+      img.addEventListener('click', () => openLightbox(url));
+      cell.appendChild(img);
+      grid.appendChild(cell);
+    });
+    return grid;
+  }
+
+  function openLightbox(url) {
+    const box = document.createElement('div');
+    box.className = 'lightbox';
+    const img = document.createElement('img');
+    img.src = url;
+    box.appendChild(img);
+    box.addEventListener('click', () => box.remove());
+    document.body.appendChild(box);
+    requestAnimationFrame(() => box.classList.add('show'));
   }
 
   /* 评论区:列表 + 发表 + 回复 */
@@ -1891,9 +2062,9 @@
       if (!secret) { msg.textContent = m.mode === 'question' ? '请输入答案' : '请输入暗号'; return; }
       btn.disabled = true; msg.textContent = '';
       try {
-        const body = await Memories.open(m.id, secret);
+        const res = await Memories.open(m.id, secret);
         content.innerHTML = '';
-        content.appendChild(readerBody(m, body, secret));
+        content.appendChild(readerBody(m, res.body, res.images, secret));
         burstConfetti(40);
       } catch (err) {
         msg.textContent = err.message || '不对哦';
@@ -1923,9 +2094,9 @@
       if (left <= 0) {
         timer.textContent = '正在开启…';
         try {
-          const body = await Memories.open(m.id, null);
+          const res = await Memories.open(m.id, null);
           content.innerHTML = '';
-          content.appendChild(readerBody(m, body, null));
+          content.appendChild(readerBody(m, res.body, res.images, null));
           burstConfetti(40);
         } catch (_) {}
         clearReaderTimers();
