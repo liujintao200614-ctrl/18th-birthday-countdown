@@ -641,7 +641,7 @@
   .mem-form-msg { font-family: var(--font-display); font-size: 13px; margin-top: 10px; min-height: 18px; color: #e0447a; text-align: center; }
 
   /* 回忆时光轴 */
-  .mem-list { position: relative; display: flex; flex-direction: column; gap: 24px; }
+  .mem-list { position: relative; display: flex; flex-direction: column; gap: 18px; }
   .mem-state {
     text-align: center;
     font-family: var(--font-display);
@@ -650,58 +650,79 @@
     line-height: 1.8;
   }
   /* 竖向时间线(仅有回忆时显示) */
-  .mem-list.has-items { padding-left: 36px; }
   .mem-list.has-items::before {
     content: '';
     position: absolute;
-    left: 9px; top: 8px; bottom: 8px;
+    left: 63px; top: 12px; bottom: 12px;
     width: 3px;
     border-radius: 3px;
     background: linear-gradient(var(--card-border), var(--accent) 40%, var(--accent) 60%, var(--card-border));
     opacity: .8;
   }
-  .mem-card {
+  /* 一行:日期 | 节点轨道 | 胶囊 */
+  .mem-row {
     position: relative;
-    background: var(--card);
-    border: 2px solid var(--card-border);
-    border-radius: 22px;
-    padding: clamp(16px, 3vw, 24px);
-    box-shadow: 0 10px 26px var(--shadow);
-    animation: rise .4s ease both;
+    display: grid;
+    grid-template-columns: 52px 24px minmax(0, 1fr);
+    align-items: start;
   }
-  /* 时间线节点(圆点) */
-  .mem-list.has-items .mem-card::before {
+  .mem-date {
+    grid-column: 1;
+    text-align: right;
+    padding-top: 12px;
+    line-height: 1.15;
+  }
+  .mem-date b {
+    display: block;
+    font-family: var(--font-num);
+    font-weight: 800;
+    font-size: 16px;
+    color: var(--accent-deep);
+  }
+  .mem-date span { font-size: 11px; color: var(--text-soft); }
+  /* 时间线节点 */
+  .mem-row::before {
     content: '';
     position: absolute;
-    left: -32px; top: 22px;
+    left: 57px; top: 15px;
     width: 15px; height: 15px;
     border-radius: 50%;
     background: var(--accent);
     border: 3px solid var(--card);
     box-shadow: 0 0 0 3px var(--card-border);
+    z-index: 1;
+    transition: transform .2s;
   }
-  /* 指向卡片的小箭头,增强时间线连接感 */
-  .mem-list.has-items .mem-card::after {
-    content: '';
-    position: absolute;
-    left: -8px; top: 25px;
-    width: 12px; height: 12px;
+  .mem-row:hover::before { transform: scale(1.2); }
+
+  /* 胶囊 */
+  .mem-card {
+    grid-column: 3;
+    position: relative;
     background: var(--card);
-    border-left: 2px solid var(--card-border);
-    border-bottom: 2px solid var(--card-border);
-    transform: rotate(45deg);
+    border: 2px solid var(--card-border);
+    border-radius: 20px;
+    padding: 13px 16px;
+    box-shadow: 0 8px 20px var(--shadow);
+    cursor: pointer;
+    animation: rise .4s ease both;
+    transition: transform .2s, box-shadow .2s, border-color .2s;
   }
+  .mem-card:hover { transform: translateY(-2px); box-shadow: 0 12px 26px var(--shadow); border-color: var(--accent); }
+  .mem-card:active { transform: scale(.99); }
   .mem-card-top {
     display: flex;
-    align-items: baseline;
+    align-items: center;
     justify-content: space-between;
     gap: 10px;
-    margin-bottom: 4px;
   }
   .mem-card-title {
     font-family: var(--font-display);
-    font-size: clamp(17px, 3vw, 21px);
+    font-size: clamp(16px, 3vw, 20px);
     color: var(--accent-deep);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
   .mem-tag {
     flex: none;
@@ -713,15 +734,69 @@
     padding: 3px 10px;
     white-space: nowrap;
   }
-  .mem-time { font-size: 12px; color: var(--text-soft); margin-bottom: 12px; }
-  .mem-body {
+  .mem-hint {
+    margin-top: 6px;
+    font-size: 13px;
+    color: var(--text-soft);
     font-family: var(--font-body);
-    font-size: 15px;
+  }
+  .mem-hint .go { color: var(--accent); font-weight: 700; }
+
+  /* ---- 阅读页(点开胶囊后)---- */
+  .mem-reader {
+    position: fixed; inset: 0; z-index: 95;
+    display: none;
+    align-items: center; justify-content: center;
+    padding: 20px;
+    background: rgba(60, 20, 40, .32);
+    backdrop-filter: blur(5px);
+  }
+  .mem-reader.show { display: flex; animation: fadeIn .3s ease both; }
+  .reader-card {
+    width: min(560px, 100%);
+    max-height: 86vh;
+    overflow-y: auto;
+    background: var(--card);
+    border: 3px solid var(--card-border);
+    border-radius: 26px;
+    padding: clamp(22px, 4vw, 34px);
+    box-shadow: 0 24px 60px rgba(60, 20, 40, .35);
+    animation: rise .35s ease both;
+  }
+  .reader-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+  }
+  .reader-title {
+    font-family: var(--font-display);
+    font-size: clamp(22px, 4.5vw, 30px);
+    color: var(--accent-deep);
+    line-height: 1.3;
+  }
+  .reader-time { font-size: 12px; color: var(--text-soft); margin: 6px 0 20px; }
+  .reader-body {
+    font-family: var(--font-body);
+    font-size: 16px;
     color: var(--text);
-    line-height: 1.85;
+    line-height: 1.9;
     white-space: pre-wrap;
     word-break: break-word;
   }
+  .mem-actions-row { display: flex; justify-content: flex-end; margin-top: 22px; }
+  .mem-del {
+    border: none; cursor: pointer;
+    background: transparent;
+    color: var(--text-soft);
+    font-family: var(--font-body);
+    font-size: 13px;
+    padding: 6px 12px;
+    border-radius: 999px;
+    transition: background .2s, color .2s;
+  }
+  .mem-del:hover { background: var(--bar-track); color: #e0447a; }
+  .mem-del[disabled] { opacity: .5; cursor: default; }
 
   /* 锁定态 */
   .mem-lock {
@@ -928,8 +1003,20 @@
       <p class="mem-form-msg" id="mem-form-msg"></p>
     </div>
 
-    <!-- 列表 -->
+    <!-- 时光轴 -->
     <div class="mem-list" id="mem-list"></div>
+  </div>
+</div>
+
+<!-- ========== 回忆阅读页 ========== -->
+<div class="mem-reader" id="mem-reader">
+  <div class="reader-card">
+    <div class="reader-head">
+      <div class="reader-title" id="reader-title"></div>
+      <button class="mem-close" id="reader-close" aria-label="关闭">✕</button>
+    </div>
+    <div class="reader-time" id="reader-time"></div>
+    <div id="reader-content"></div>
   </div>
 </div>
 
@@ -1235,6 +1322,10 @@
       if (error) throw error;
       return data;
     },
+    async remove(id, secret) {
+      const { error } = await supa.rpc('delete_memory', { p_id: id, p_secret: secret ?? null });
+      if (error) throw error;
+    },
   };
 
   const MODE_INFO = {
@@ -1269,6 +1360,7 @@
   function closeMemories() {
     memPanel.classList.remove('show');
     clearMemTimers();
+    closeReader();
   }
   byId('mem-open').addEventListener('click', openMemories);
   byId('mem-close').addEventListener('click', closeMemories);
@@ -1361,7 +1453,7 @@
         return;
       }
       memListBox.classList.add('has-items');
-      items.forEach(m => memListBox.appendChild(renderCard(m)));
+      items.forEach(m => memListBox.appendChild(renderRow(m)));
     } catch (err) {
       memListBox.classList.remove('has-items');
       memListBox.innerHTML = '';
@@ -1376,8 +1468,24 @@
     return d;
   }
 
-  /* ---- 单张回忆卡片 ---- */
-  function renderCard(m) {
+  /* ---- 时间线上的一枚「胶囊」---- */
+  function renderRow(m) {
+    const row = document.createElement('div');
+    row.className = 'mem-row';
+
+    // 时间线节点旁的日期
+    const d = new Date(m.created_at);
+    const date = document.createElement('time');
+    date.className = 'mem-date';
+    const dtop = document.createElement('b');
+    dtop.textContent = pad(d.getMonth() + 1) + '/' + pad(d.getDate());
+    const dsub = document.createElement('span');
+    dsub.textContent = pad(d.getHours()) + ':' + pad(d.getMinutes());
+    date.appendChild(dtop);
+    date.appendChild(dsub);
+    row.appendChild(date);
+
+    // 胶囊卡片
     const card = document.createElement('div');
     card.className = 'mem-card';
 
@@ -1393,62 +1501,103 @@
     top.appendChild(tag);
     card.appendChild(top);
 
-    const time = document.createElement('div');
-    time.className = 'mem-time';
-    time.textContent = fmtTime(m.created_at);
-    card.appendChild(time);
+    const hint = document.createElement('div');
+    hint.className = 'mem-hint';
+    card.appendChild(hint);
 
-    if (m.is_open) {
-      card.appendChild(bodyEl(m.body));
-    } else {
-      card.appendChild(lockEl(m, card));
-    }
-    return card;
-  }
-
-  function bodyEl(text) {
-    const b = document.createElement('div');
-    b.className = 'mem-body';
-    b.textContent = text;
-    return b;
-  }
-
-  /* ---- 锁定态:问题 / 暗号 / 定时 ---- */
-  function lockEl(m, card) {
-    const box = document.createElement('div');
-    box.className = 'mem-lock';
-
-    if (m.mode === 'timed') {
-      const info = document.createElement('div');
-      info.className = 'lock-q';
-      const timer = document.createElement('div');
-      timer.className = 'mem-timer';
-      info.innerHTML = '⏰ 将于 ' + fmtTime(m.unlock_at) + ' 开启';
-      box.appendChild(info);
-      box.appendChild(timer);
+    if (m.mode === 'timed' && !m.is_open) {
+      // 未开启的时光胶囊:胶囊上显示实时倒计时
       const target = new Date(m.unlock_at).getTime();
-      const upd = async () => {
+      const upd = () => {
         const left = target - Date.now();
-        if (left <= 0) {
-          timer.textContent = '正在开启…';
-          try {
-            const body = await Memories.open(m.id, null);
-            card.replaceChild(bodyEl(body), box);
-          } catch (_) { loadMemories(); }
-          return;
-        }
+        if (left <= 0) { loadMemories(); return; }
         const dd = Math.floor(left / 86400000);
         const hh = Math.floor(left / 3600000) % 24;
         const mm = Math.floor(left / 60000) % 60;
         const ss = Math.floor(left / 1000) % 60;
-        timer.textContent = (dd ? dd + ' 天 ' : '') + pad(hh) + ':' + pad(mm) + ':' + pad(ss);
+        hint.textContent = '⏰ 还有 ' + (dd ? dd + ' 天 ' : '') + pad(hh) + ':' + pad(mm) + ':' + pad(ss) + ' 开启';
       };
       upd();
       memTimers.push(setInterval(upd, 1000));
-      return box;
+    } else if (m.is_open) {
+      hint.innerHTML = '轻触展开阅读 <span class="go">→</span>';
+    } else if (m.mode === 'question') {
+      hint.textContent = '❓ 需要回答问题 · 轻触开启';
+    } else if (m.mode === 'passphrase') {
+      hint.textContent = '🔑 需要暗号 · 轻触开启';
     }
 
-    // 问题 / 暗号
+    card.addEventListener('click', () => openReader(m));
+    row.appendChild(card);
+    return row;
+  }
+
+  /* ================= 回忆阅读页(胶囊内部) ================= */
+  const reader = byId('mem-reader');
+  let readerTimers = [];
+  function clearReaderTimers() { readerTimers.forEach(clearInterval); readerTimers = []; }
+
+  function openReader(m) {
+    clearReaderTimers();
+    byId('reader-title').textContent = m.title || '一段回忆';
+    byId('reader-time').textContent =
+      MODE_INFO[m.mode].icon + ' ' + MODE_INFO[m.mode].label + ' · ' + fmtTime(m.created_at);
+    const content = byId('reader-content');
+    content.innerHTML = '';
+
+    if (m.is_open) {
+      content.appendChild(readerBody(m, m.body, null));
+    } else if (m.mode === 'timed') {
+      content.appendChild(readerTimed(m, content));
+    } else {
+      content.appendChild(readerChallenge(m, content));
+    }
+    reader.classList.add('show');
+  }
+
+  function closeReader() {
+    reader.classList.remove('show');
+    clearReaderTimers();
+  }
+  byId('reader-close').addEventListener('click', closeReader);
+  reader.addEventListener('click', e => { if (e.target === reader) closeReader(); });
+
+  /* 正文 + 删除 */
+  function readerBody(m, text, secret) {
+    const wrap = document.createElement('div');
+    const body = document.createElement('div');
+    body.className = 'reader-body';
+    body.textContent = text;
+    wrap.appendChild(body);
+
+    const row = document.createElement('div');
+    row.className = 'mem-actions-row';
+    const del = document.createElement('button');
+    del.className = 'mem-del';
+    del.textContent = '🗑 删除这段回忆';
+    del.addEventListener('click', async () => {
+      if (!window.confirm('确定删除这段回忆吗?删除后无法恢复哦')) return;
+      del.disabled = true;
+      del.textContent = '删除中…';
+      try {
+        await Memories.remove(m.id, secret ?? null);
+        closeReader();
+        await loadMemories();
+      } catch (err) {
+        del.disabled = false;
+        del.textContent = '🗑 删除这段回忆';
+        window.alert(err.message || '删除失败,请重试');
+      }
+    });
+    row.appendChild(del);
+    wrap.appendChild(row);
+    return wrap;
+  }
+
+  /* 问题 / 暗号:在阅读页里解锁 */
+  function readerChallenge(m, content) {
+    const box = document.createElement('div');
+    box.className = 'mem-lock';
     const q = document.createElement('div');
     q.className = 'lock-q';
     q.textContent = m.mode === 'question'
@@ -1464,7 +1613,7 @@
     input.placeholder = m.mode === 'question' ? '你的答案' : '暗号';
     const btn = document.createElement('button');
     btn.className = 'mem-lock-btn';
-    btn.textContent = '查看';
+    btn.textContent = '解锁';
     row.appendChild(input);
     row.appendChild(btn);
     box.appendChild(row);
@@ -1479,7 +1628,8 @@
       btn.disabled = true; msg.textContent = '';
       try {
         const body = await Memories.open(m.id, secret);
-        card.replaceChild(bodyEl(body), box);
+        content.innerHTML = '';
+        content.appendChild(readerBody(m, body, secret));
         burstConfetti(40);
       } catch (err) {
         msg.textContent = err.message || '不对哦';
@@ -1488,6 +1638,43 @@
     };
     btn.addEventListener('click', tryOpen);
     input.addEventListener('keydown', e => { if (e.key === 'Enter') tryOpen(); });
+    return box;
+  }
+
+  /* 定时:阅读页里显示倒计时,到点自动开启 */
+  function readerTimed(m, content) {
+    const box = document.createElement('div');
+    box.className = 'mem-lock';
+    const info = document.createElement('div');
+    info.className = 'lock-q';
+    info.textContent = '⏰ 这段回忆将于 ' + fmtTime(m.unlock_at) + ' 开启';
+    const timer = document.createElement('div');
+    timer.className = 'mem-timer';
+    box.appendChild(info);
+    box.appendChild(timer);
+
+    const target = new Date(m.unlock_at).getTime();
+    const upd = async () => {
+      const left = target - Date.now();
+      if (left <= 0) {
+        timer.textContent = '正在开启…';
+        try {
+          const body = await Memories.open(m.id, null);
+          content.innerHTML = '';
+          content.appendChild(readerBody(m, body, null));
+          burstConfetti(40);
+        } catch (_) {}
+        clearReaderTimers();
+        return;
+      }
+      const dd = Math.floor(left / 86400000);
+      const hh = Math.floor(left / 3600000) % 24;
+      const mm = Math.floor(left / 60000) % 60;
+      const ss = Math.floor(left / 1000) % 60;
+      timer.textContent = (dd ? dd + ' 天 ' : '') + pad(hh) + ':' + pad(mm) + ':' + pad(ss);
+    };
+    upd();
+    readerTimers.push(setInterval(upd, 1000));
     return box;
   }
 

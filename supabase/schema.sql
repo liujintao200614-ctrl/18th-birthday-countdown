@@ -163,7 +163,47 @@ begin
 end;
 $$;
 
--- ---------- 授权匿名角色调用这三个函数 ----------
+-- ---------- 删除一篇回忆(公开可直接删;其它需通过解锁校验) ----------
+create or replace function public.delete_memory(p_id uuid, p_secret text default null)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  m public.memories;
+begin
+  select * into m from public.memories where id = p_id;
+  if not found then
+    raise exception '这篇回忆不存在';
+  end if;
+
+  if m.mode = 'public' then
+    delete from public.memories where id = p_id;
+  elsif m.mode = 'timed' then
+    if now() >= m.unlock_at then
+      delete from public.memories where id = p_id;
+    else
+      raise exception '还没到开启时间,暂时不能删除';
+    end if;
+  elsif m.mode = 'question' then
+    if lower(btrim(coalesce(p_secret, ''))) = m.answer then
+      delete from public.memories where id = p_id;
+    else
+      raise exception '答案不对,不能删除';
+    end if;
+  elsif m.mode = 'passphrase' then
+    if btrim(coalesce(p_secret, '')) = btrim(m.passphrase) then
+      delete from public.memories where id = p_id;
+    else
+      raise exception '暗号不对,不能删除';
+    end if;
+  end if;
+end;
+$$;
+
+-- ---------- 授权匿名角色调用这些函数 ----------
 grant execute on function public.create_memory(text,text,text,text,text,text,timestamptz) to anon, authenticated;
 grant execute on function public.list_memories() to anon, authenticated;
 grant execute on function public.open_memory(uuid, text) to anon, authenticated;
+grant execute on function public.delete_memory(uuid, text) to anon, authenticated;
