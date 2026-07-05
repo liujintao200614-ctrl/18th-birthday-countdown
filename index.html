@@ -534,7 +534,7 @@
     <div class="surprise-card">
       <h3>✨ 惊喜解锁成功!</h3>
       <p>愿你的 18 岁,<br>充满快乐与幸运! 🥳</p>
-      <button class="enter-btn" id="enter-btn">进入惊喜页面 →</button>
+      <button class="enter-btn" id="enter-btn">← 返回倒计时</button>
     </div>
   </div>
 </div>
@@ -760,7 +760,7 @@
   }
 
   function unlockSurprise() {
-    if (unlocked) return;
+    if (unlocked) return; // 防止动画播放过程中重复触发
     unlocked = true;
     surprise.classList.add('show');
     showStage(1);
@@ -776,6 +776,7 @@
     nameRain.innerHTML = '';
     stopMusic();
     burstConfetti(180);
+    unlocked = false; // 允许重新输入名字后再次触发
   });
 
   /* ================= 名字记忆 ================= */
