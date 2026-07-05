@@ -2,7 +2,7 @@
 <html lang="zh-CN" data-theme="strawberry">
 <head>
 <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no, viewport-fit=cover" />
 <title>✨ 18岁生日倒计时 ✨</title>
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -48,6 +48,26 @@
   }
 
   * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  /* ---------- 移动端手势体验 ----------
+     · 去掉点击时的灰色高亮块
+     · 双击/多指不缩放页面(交给下面的 touch-action + viewport)
+     · 长按不弹出系统菜单、不选中文字 */
+  * { -webkit-tap-highlight-color: transparent; }
+  html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; touch-action: manipulation; }
+  body {
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    user-select: none;
+  }
+  /* 需要输入 / 选中的地方恢复正常(可编辑名字、留言输入框等) */
+  input, textarea, [contenteditable="true"], [contenteditable=""] {
+    -webkit-touch-callout: default;
+    -webkit-user-select: text;
+    -moz-user-select: text;
+    user-select: text;
+  }
 
   body {
     min-height: 100vh;
@@ -1921,6 +1941,19 @@
     readerTimers.push(setInterval(upd, 1000));
     return box;
   }
+
+  /* ================= 移动端手势兜底 ================= */
+  // iOS Safari 会忽略 user-scalable=no,这里再拦一层双指缩放
+  ['gesturestart', 'gesturechange', 'gestureend'].forEach(evt => {
+    document.addEventListener(evt, e => e.preventDefault());
+  });
+  // 双击缩放兜底(touch-action:manipulation 已能处理,这里再保一层)
+  let lastTouchEnd = 0;
+  document.addEventListener('touchend', e => {
+    const now = Date.now();
+    if (now - lastTouchEnd <= 300) e.preventDefault();
+    lastTouchEnd = now;
+  }, { passive: false });
 
   /* ================= 初始化 ================= */
   setTheme(localStorage.getItem('bday-theme') || 'strawberry');
