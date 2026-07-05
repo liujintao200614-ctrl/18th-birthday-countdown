@@ -360,8 +360,12 @@
     color: var(--text-soft);
   }
 
-  /* 名字雨 */
-  .name-rain { position: absolute; inset: 0; z-index: 1; pointer-events: none; overflow: hidden; }
+  /* 名字雨(3D 立体字) */
+  .name-rain {
+    position: absolute; inset: 0; z-index: 1;
+    pointer-events: none; overflow: hidden;
+    perspective: 700px;
+  }
   .name-rain span {
     position: absolute;
     top: -14vh;
@@ -370,23 +374,33 @@
     white-space: nowrap;
     will-change: transform, opacity;
     animation: name-fall linear infinite;
-    text-shadow: 0 2px 8px rgba(255,255,255,.6);
+    color: var(--c);
+    /* 逐层挤出的 3D 块状字 + 底部投影 */
+    text-shadow:
+      0.018em 0.018em 0 var(--cd),
+      0.036em 0.036em 0 var(--cd),
+      0.054em 0.054em 0 var(--cd),
+      0.072em 0.072em 0 var(--cd),
+      0.09em  0.09em  0 var(--cd),
+      0.11em  0.11em  0 var(--cd),
+      0.14em  0.22em  0.3em rgba(130, 40, 85, .35);
+    filter: blur(var(--blur));
   }
   @keyframes name-fall {
     0% {
-      transform: translate(0, 0) rotate(var(--r0)) scale(.5);
+      transform: translate(0, 0) rotate(var(--r0)) rotateX(35deg) rotateY(var(--ry)) scale(calc(var(--sc) * .55));
       opacity: 0;
     }
     10% {
       opacity: var(--op);
-      transform: translate(calc(var(--sway) * .1), 11vh) rotate(calc(var(--r0) * .6)) scale(1);
+      transform: translate(calc(var(--sway) * .1), 11vh) rotate(calc(var(--r0) * .6)) rotateX(14deg) rotateY(calc(var(--ry) * .5)) scale(var(--sc));
     }
     55% {
-      transform: translate(calc(var(--sway) * -.6), 62vh) rotate(var(--r1)) scale(1);
+      transform: translate(calc(var(--sway) * -.6), 62vh) rotate(var(--r1)) rotateX(-12deg) rotateY(calc(var(--ry) * -.7)) scale(var(--sc));
       opacity: var(--op);
     }
     100% {
-      transform: translate(var(--sway), 118vh) rotate(calc(var(--r1) * -1)) scale(.94);
+      transform: translate(var(--sway), 118vh) rotate(calc(var(--r1) * -1)) rotateX(18deg) rotateY(var(--ry)) scale(calc(var(--sc) * .94));
       opacity: calc(var(--op) * .75);
     }
   }
@@ -671,21 +685,36 @@
     });
   }
 
-  const RAIN_COLORS = ['#f04d8a', '#ff6fa5', '#8f6fff', '#c86fd8', '#ff8fb8'];
+  // [表面色, 侧面挤出色] 配对,营造立体块状字
+  const RAIN_COLORS = [
+    ['#ff6fa5', '#c23a6e'],
+    ['#f04d8a', '#a92a5c'],
+    ['#8f6fff', '#5c3fc4'],
+    ['#c86fd8', '#8e3fa2'],
+    ['#ff8fb8', '#d4577f'],
+    ['#ffb347', '#d97f16'],
+  ];
   function rainNames() {
     nameRain.innerHTML = '';
     for (let i = 0; i < 34; i++) {
       const s = document.createElement('span');
       s.textContent = SECRET;
+      const depth = Math.random(); // 0 = 远处, 1 = 近处
+      const [c, cd] = RAIN_COLORS[Math.floor(Math.random() * RAIN_COLORS.length)];
       s.style.left = (Math.random() * 96) + 'vw';
-      s.style.fontSize = (15 + Math.random() * 34) + 'px';
-      s.style.color = RAIN_COLORS[Math.floor(Math.random() * RAIN_COLORS.length)];
+      s.style.fontSize = (16 + depth * 42) + 'px';
+      s.style.setProperty('--c', c);
+      s.style.setProperty('--cd', cd);
+      s.style.setProperty('--blur', ((1 - depth) * 2.2).toFixed(2) + 'px'); // 远处虚化,近处清晰
+      s.style.setProperty('--sc', (0.85 + depth * .3).toFixed(2));
       s.style.setProperty('--sway', (Math.random() * 90 - 45) + 'px');
       s.style.setProperty('--r0', (Math.random() * 40 - 20) + 'deg');
       s.style.setProperty('--r1', (Math.random() * 24 - 12) + 'deg');
-      s.style.setProperty('--op', .35 + Math.random() * .5);
-      s.style.animationDuration = (3.2 + Math.random() * 3.4) + 's';
+      s.style.setProperty('--ry', (Math.random() * 50 - 25) + 'deg');
+      s.style.setProperty('--op', .4 + depth * .5); // 近处更实,远处更淡
+      s.style.animationDuration = (5.5 - depth * 2 + Math.random() * 1.5) + 's'; // 近处落得快
       s.style.animationDelay = (Math.random() * 4 - 3.5) + 's';
+      s.style.zIndex = depth > .6 ? 2 : 1;
       nameRain.appendChild(s);
     }
   }
