@@ -798,6 +798,46 @@
   .mem-del:hover { background: var(--bar-track); color: #e0447a; }
   .mem-del[disabled] { opacity: .5; cursor: default; }
 
+  /* ---- 留言 ---- */
+  .mem-comments {
+    margin-top: 22px;
+    padding-top: 20px;
+    border-top: 1.5px dashed var(--card-border);
+  }
+  .mem-comments-title {
+    font-family: var(--font-display);
+    font-size: 15px;
+    color: var(--accent-deep);
+    margin-bottom: 12px;
+  }
+  .comment-list { display: flex; flex-direction: column; gap: 12px; }
+  .comment-empty { font-size: 13px; color: var(--text-soft); padding: 4px 0; }
+  .comment {
+    background: var(--bar-track);
+    border-radius: 14px;
+    padding: 10px 14px;
+  }
+  .comment-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 8px;
+    margin-bottom: 4px;
+  }
+  .comment-head b { font-family: var(--font-display); font-size: 13px; color: var(--accent-deep); }
+  .comment-head span { font-size: 11px; color: var(--text-soft); flex: none; }
+  .comment-text {
+    font-family: var(--font-body);
+    font-size: 14px;
+    color: var(--text);
+    line-height: 1.7;
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+  .comment-form { display: flex; flex-direction: column; gap: 10px; margin-top: 16px; }
+  .comment-input { min-height: 64px; }
+  .comment-send { align-self: flex-end; }
+
   /* 锁定态 */
   .mem-lock {
     background: var(--bar-track);
@@ -1326,6 +1366,18 @@
       const { error } = await supa.rpc('delete_memory', { p_id: id, p_secret: secret ?? null });
       if (error) throw error;
     },
+    async listComments(id) {
+      const { data, error } = await supa.rpc('list_comments', { p_memory_id: id });
+      if (error) throw error;
+      return data || [];
+    },
+    async addComment(id, body, author) {
+      const { data, error } = await supa.rpc('add_comment', {
+        p_memory_id: id, p_body: body, p_author: author ?? null,
+      });
+      if (error) throw error;
+      return (data && data[0]) || null;
+    },
   };
 
   const MODE_INFO = {
@@ -1591,7 +1643,100 @@
     });
     row.appendChild(del);
     wrap.appendChild(row);
+
+    // 评论区
+    wrap.appendChild(commentsEl(m));
     return wrap;
+  }
+
+  /* 评论区:列表 + 发表 */
+  function commentsEl(m) {
+    const box = document.createElement('div');
+    box.className = 'mem-comments';
+
+    const title = document.createElement('div');
+    title.className = 'mem-comments-title';
+    title.textContent = '💬 留言';
+    box.appendChild(title);
+
+    const list = document.createElement('div');
+    list.className = 'comment-list';
+    list.textContent = '加载中…';
+    box.appendChild(list);
+
+    const renderList = (items) => {
+      list.innerHTML = '';
+      if (!items.length) {
+        const empty = document.createElement('div');
+        empty.className = 'comment-empty';
+        empty.textContent = '还没有留言,来说第一句吧~';
+        list.appendChild(empty);
+        return;
+      }
+      items.forEach(c => {
+        const item = document.createElement('div');
+        item.className = 'comment';
+        const head = document.createElement('div');
+        head.className = 'comment-head';
+        const who = document.createElement('b');
+        who.textContent = c.author || '匿名';
+        const when = document.createElement('span');
+        when.textContent = fmtTime(c.created_at);
+        head.appendChild(who);
+        head.appendChild(when);
+        const text = document.createElement('div');
+        text.className = 'comment-text';
+        text.textContent = c.body;
+        item.appendChild(head);
+        item.appendChild(text);
+        list.appendChild(item);
+      });
+    };
+
+    Memories.listComments(m.id)
+      .then(renderList)
+      .catch(() => { list.textContent = '留言加载失败了 😢'; });
+
+    // 发表
+    const form = document.createElement('div');
+    form.className = 'comment-form';
+    const author = document.createElement('input');
+    author.className = 'mem-input';
+    author.type = 'text';
+    author.maxLength = 24;
+    author.placeholder = '昵称（可选）';
+    const body = document.createElement('textarea');
+    body.className = 'mem-textarea comment-input';
+    body.placeholder = '写下你的留言…';
+    const send = document.createElement('button');
+    send.className = 'mem-lock-btn comment-send';
+    send.textContent = '发送';
+    const msg = document.createElement('div');
+    msg.className = 'mem-lock-msg';
+
+    const submit = async () => {
+      const text = body.value.trim();
+      if (!text) { msg.textContent = '留言不能为空哦'; return; }
+      send.disabled = true; msg.textContent = '';
+      try {
+        await Memories.addComment(m.id, text, author.value.trim() || null);
+        body.value = '';
+        const items = await Memories.listComments(m.id);
+        renderList(items);
+      } catch (err) {
+        msg.textContent = err.message || '发送失败,请重试';
+      } finally {
+        send.disabled = false;
+      }
+    };
+    send.addEventListener('click', submit);
+
+    form.appendChild(author);
+    form.appendChild(body);
+    form.appendChild(send);
+    box.appendChild(form);
+    box.appendChild(msg);
+    return box;
   }
 
   /* 问题 / 暗号:在阅读页里解锁 */

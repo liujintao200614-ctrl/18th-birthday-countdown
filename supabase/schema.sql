@@ -202,8 +202,88 @@ begin
 end;
 $$;
 
+-- =====================================================================
+-- 评论 / 留言
+--   comments 表跟随所属回忆一起删除(on delete cascade),
+--   同样只走 SECURITY DEFINER 函数读写。
+-- =====================================================================
+create table if not exists public.comments (
+  id          uuid primary key default gen_random_uuid(),
+  memory_id   uuid not null references public.memories(id) on delete cascade,
+  author      text,          -- 昵称,可选
+  body        text not null,
+  created_at  timestamptz not null default now()
+);
+
+create index if not exists comments_memory_idx on public.comments (memory_id, created_at);
+
+alter table public.comments enable row level security;
+revoke all on public.comments from anon, authenticated;
+
+-- ---------- 列出某篇回忆的评论 ----------
+create or replace function public.list_comments(p_memory_id uuid)
+returns table (id uuid, author text, body text, created_at timestamptz)
+language sql
+security definer
+set search_path = public
+as $$
+  select id, author, body, created_at
+  from public.comments
+  where memory_id = p_memory_id
+  order by created_at asc;
+$$;
+
+-- ---------- 发表一条评论 ----------
+create or replace function public.add_comment(
+  p_memory_id uuid,
+  p_body      text,
+  p_author    text default null
+)
+returns table (id uuid, author text, body text, created_at timestamptz)
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  r public.comments;
+begin
+  if p_body is null or length(btrim(p_body)) = 0 then
+    raise exception '评论内容不能为空';
+  end if;
+  if length(p_body) > 2000 then
+    raise exception '评论太长啦';
+  end if;
+  if not exists (select 1 from public.memories where id = p_memory_id) then
+    raise exception '这篇回忆不存在';
+  end if;
+
+  insert into public.comments (memory_id, author, body)
+  values (
+    p_memory_id,
+    nullif(btrim(coalesce(p_author, '')), ''),
+    btrim(p_body)
+  )
+  returning * into r;
+
+  return query select r.id, r.author, r.body, r.created_at;
+end;
+$$;
+
+-- ---------- 删除一条评论 ----------
+create or replace function public.delete_comment(p_id uuid)
+returns void
+language sql
+security definer
+set search_path = public
+as $$
+  delete from public.comments where id = p_id;
+$$;
+
 -- ---------- 授权匿名角色调用这些函数 ----------
 grant execute on function public.create_memory(text,text,text,text,text,text,timestamptz) to anon, authenticated;
 grant execute on function public.list_memories() to anon, authenticated;
 grant execute on function public.open_memory(uuid, text) to anon, authenticated;
 grant execute on function public.delete_memory(uuid, text) to anon, authenticated;
+grant execute on function public.list_comments(uuid) to anon, authenticated;
+grant execute on function public.add_comment(uuid, text, text) to anon, authenticated;
+grant execute on function public.delete_comment(uuid) to anon, authenticated;
