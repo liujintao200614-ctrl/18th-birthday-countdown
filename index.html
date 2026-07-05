@@ -325,6 +325,120 @@
     100% { transform: translate(var(--cx), 105vh) rotate(720deg); opacity: .85; }
   }
 
+  /* ---------- 惊喜解锁 ---------- */
+  .surprise {
+    position: fixed; inset: 0; z-index: 100;
+    display: none;
+    align-items: center; justify-content: center;
+    text-align: center;
+    padding: 20px;
+    background: radial-gradient(circle at 50% 38%, #ffffff 0%, var(--bg-b) 55%, var(--bg-a) 100%);
+    overflow: hidden;
+  }
+  .surprise.show { display: flex; animation: fadeIn .5s ease both; }
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+  .surprise-stage { display: none; position: relative; z-index: 3; width: min(560px, 92vw); }
+  .surprise-stage.active { display: block; animation: rise .6s ease both; }
+
+  .surprise .mascot {
+    font-size: clamp(70px, 18vw, 120px);
+    display: inline-block;
+    animation: bounce 2s ease-in-out infinite;
+    filter: drop-shadow(0 12px 20px var(--shadow));
+  }
+  .surprise .big {
+    font-family: var(--font-display);
+    font-size: clamp(24px, 5vw, 40px);
+    color: var(--accent-deep);
+    margin: 18px 0 10px;
+    line-height: 1.4;
+  }
+  .surprise .sub {
+    font-family: var(--font-display);
+    font-size: clamp(15px, 2.6vw, 20px);
+    color: var(--text-soft);
+  }
+
+  /* 名字雨 */
+  .name-rain { position: absolute; inset: 0; z-index: 1; pointer-events: none; overflow: hidden; }
+  .name-rain span {
+    position: absolute;
+    top: -14vh;
+    font-family: var(--font-display);
+    font-weight: 800;
+    white-space: nowrap;
+    will-change: transform, opacity;
+    animation: name-fall linear infinite;
+    text-shadow: 0 2px 8px rgba(255,255,255,.6);
+  }
+  @keyframes name-fall {
+    0% {
+      transform: translate(0, 0) rotate(var(--r0)) scale(.5);
+      opacity: 0;
+    }
+    10% {
+      opacity: var(--op);
+      transform: translate(calc(var(--sway) * .1), 11vh) rotate(calc(var(--r0) * .6)) scale(1);
+    }
+    55% {
+      transform: translate(calc(var(--sway) * -.6), 62vh) rotate(var(--r1)) scale(1);
+      opacity: var(--op);
+    }
+    100% {
+      transform: translate(var(--sway), 118vh) rotate(calc(var(--r1) * -1)) scale(.94);
+      opacity: calc(var(--op) * .75);
+    }
+  }
+
+  /* 画面震动 */
+  .surprise.shake { animation: screen-shake .6s ease-in-out; }
+  @keyframes screen-shake {
+    0%, 100% { transform: translate(0, 0); }
+    12% { transform: translate(-7px, 3px) rotate(-.5deg); }
+    25% { transform: translate(6px, -4px) rotate(.5deg); }
+    38% { transform: translate(-5px, -3px); }
+    50% { transform: translate(5px, 4px) rotate(.4deg); }
+    63% { transform: translate(-4px, 2px); }
+    76% { transform: translate(3px, -2px) rotate(-.3deg); }
+    88% { transform: translate(-2px, 1px); }
+  }
+
+  /* 成功卡片 */
+  .surprise-card {
+    background: var(--card);
+    border: 3px solid var(--card-border);
+    border-radius: 28px;
+    padding: clamp(26px, 5vw, 42px);
+    box-shadow: 0 16px 40px var(--shadow), inset 0 -6px 0 var(--bar-track);
+  }
+  .surprise-card h3 {
+    font-family: var(--font-display);
+    font-size: clamp(24px, 5vw, 38px);
+    color: var(--accent-deep);
+    margin-bottom: 12px;
+  }
+  .surprise-card p {
+    font-family: var(--font-display);
+    color: var(--text-soft);
+    font-size: clamp(15px, 2.6vw, 20px);
+    line-height: 1.8;
+    margin-bottom: 26px;
+  }
+  .enter-btn {
+    border: none; cursor: pointer;
+    font-family: var(--font-display);
+    font-size: clamp(15px, 2.6vw, 18px);
+    color: #fff;
+    background: var(--accent);
+    padding: 13px 30px;
+    border-radius: 999px;
+    box-shadow: 0 8px 20px var(--shadow);
+    transition: transform .2s, box-shadow .2s;
+  }
+  .enter-btn:hover { transform: translateY(-3px); box-shadow: 0 12px 26px var(--shadow); }
+  .enter-btn:active { transform: scale(.95); }
+
   footer {
     position: relative;
     z-index: 5;
@@ -400,6 +514,30 @@
 </main>
 
 <footer>用心做给最好的朋友 💝</footer>
+
+<div class="surprise" id="surprise">
+  <div class="name-rain" id="name-rain"></div>
+
+  <div class="surprise-stage" data-stage="1">
+    <span class="mascot">🐥</span>
+    <p class="big">哇!你居然知道她的名字! 🥰</p>
+    <p class="sub">准备好了吗?惊喜要来啦~</p>
+  </div>
+
+  <div class="surprise-stage" data-stage="2">
+    <span class="mascot">🎁</span>
+    <p class="big">胡紫仙</p>
+    <p class="sub">正在为你解锁专属惊喜…</p>
+  </div>
+
+  <div class="surprise-stage" data-stage="3">
+    <div class="surprise-card">
+      <h3>✨ 惊喜解锁成功!</h3>
+      <p>愿你的 18 岁,<br>充满快乐与幸运! 🥳</p>
+      <button class="enter-btn" id="enter-btn">进入惊喜页面 →</button>
+    </div>
+  </div>
+</div>
 
 <script>
   /* ================= 配置 ================= */
@@ -521,10 +659,132 @@
   }
   byId('cake').addEventListener('click', () => burstConfetti());
 
+  /* ================= 惊喜解锁 ================= */
+  const SECRET = '胡紫仙';
+  const surprise = byId('surprise');
+  const nameRain = byId('name-rain');
+  let unlocked = false;
+
+  function showStage(n) {
+    document.querySelectorAll('.surprise-stage').forEach(s => {
+      s.classList.toggle('active', s.dataset.stage === String(n));
+    });
+  }
+
+  const RAIN_COLORS = ['#f04d8a', '#ff6fa5', '#8f6fff', '#c86fd8', '#ff8fb8'];
+  function rainNames() {
+    nameRain.innerHTML = '';
+    for (let i = 0; i < 34; i++) {
+      const s = document.createElement('span');
+      s.textContent = SECRET;
+      s.style.left = (Math.random() * 96) + 'vw';
+      s.style.fontSize = (15 + Math.random() * 34) + 'px';
+      s.style.color = RAIN_COLORS[Math.floor(Math.random() * RAIN_COLORS.length)];
+      s.style.setProperty('--sway', (Math.random() * 90 - 45) + 'px');
+      s.style.setProperty('--r0', (Math.random() * 40 - 20) + 'deg');
+      s.style.setProperty('--r1', (Math.random() * 24 - 12) + 'deg');
+      s.style.setProperty('--op', .35 + Math.random() * .5);
+      s.style.animationDuration = (3.2 + Math.random() * 3.4) + 's';
+      s.style.animationDelay = (Math.random() * 4 - 3.5) + 's';
+      nameRain.appendChild(s);
+    }
+  }
+
+  /* ----- 震动 ----- */
+  function shake(pattern) {
+    surprise.classList.remove('shake');
+    void surprise.offsetWidth;
+    surprise.classList.add('shake');
+    if (navigator.vibrate) navigator.vibrate(pattern || [80, 40, 80]);
+  }
+
+  /* ----- 背景音乐(WebAudio 八音盒,无需音频文件) ----- */
+  let audioCtx = null, musicTimer = null, masterGain = null;
+  const MELODY = [ // [音高(半音,相对C5), 拍数] 生日快乐歌
+    [0,.75],[0,.25],[2,1],[0,1],[5,1],[4,2],
+    [0,.75],[0,.25],[2,1],[0,1],[7,1],[5,2],
+    [0,.75],[0,.25],[12,1],[9,1],[5,1],[4,1],[2,2],
+    [10,.75],[10,.25],[9,1],[5,1],[7,1],[5,2],
+  ];
+  function playNote(semi, dur, when) {
+    const f = 523.25 * Math.pow(2, semi / 12);
+    const osc = audioCtx.createOscillator();
+    const g = audioCtx.createGain();
+    osc.type = 'sine';
+    osc.frequency.value = f;
+    g.gain.setValueAtTime(0, when);
+    g.gain.linearRampToValueAtTime(.5, when + .02);
+    g.gain.exponentialRampToValueAtTime(.001, when + dur * .95);
+    // 泛音让音色更像八音盒
+    const osc2 = audioCtx.createOscillator();
+    const g2 = audioCtx.createGain();
+    osc2.type = 'sine';
+    osc2.frequency.value = f * 3;
+    g2.gain.setValueAtTime(0, when);
+    g2.gain.linearRampToValueAtTime(.08, when + .02);
+    g2.gain.exponentialRampToValueAtTime(.001, when + dur * .6);
+    osc.connect(g).connect(masterGain);
+    osc2.connect(g2).connect(masterGain);
+    osc.start(when); osc.stop(when + dur);
+    osc2.start(when); osc2.stop(when + dur);
+  }
+  function startMusic() {
+    try {
+      if (!audioCtx) {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        masterGain = audioCtx.createGain();
+        masterGain.gain.value = .55;
+        masterGain.connect(audioCtx.destination);
+      }
+      if (audioCtx.state === 'suspended') audioCtx.resume();
+      const BEAT = .42;
+      const schedule = () => {
+        let t = audioCtx.currentTime + .1;
+        MELODY.forEach(([semi, beats]) => {
+          playNote(semi, beats * BEAT * 1.15, t);
+          t += beats * BEAT;
+        });
+        return (t - audioCtx.currentTime) * 1000;
+      };
+      const loop = () => { musicTimer = setTimeout(loop, schedule() + 600); };
+      loop();
+    } catch (e) { /* 音频不可用时静默降级 */ }
+  }
+  function stopMusic() {
+    clearTimeout(musicTimer);
+    musicTimer = null;
+    if (masterGain && audioCtx) {
+      masterGain.gain.setTargetAtTime(0, audioCtx.currentTime, .4);
+      setTimeout(() => { if (masterGain) masterGain.gain.value = .55; audioCtx.suspend(); }, 1500);
+    }
+  }
+
+  function unlockSurprise() {
+    if (unlocked) return;
+    unlocked = true;
+    surprise.classList.add('show');
+    showStage(1);
+    burstConfetti(70);
+    startMusic();          // 由用户输入触发,可自动播放
+    shake([90, 50, 90]);
+    setTimeout(() => { showStage(2); rainNames(); shake([60, 40, 60, 40, 120]); }, 2400);
+    setTimeout(() => { showStage(3); shake([200]); }, 5000);
+  }
+
+  byId('enter-btn').addEventListener('click', () => {
+    surprise.classList.remove('show');
+    nameRain.innerHTML = '';
+    stopMusic();
+    burstConfetti(180);
+  });
+
   /* ================= 名字记忆 ================= */
   const nameEl = byId('girl-name');
   const savedName = localStorage.getItem('bday-name');
   if (savedName) nameEl.textContent = savedName;
+  nameEl.addEventListener('input', () => {
+    if (nameEl.textContent.trim() === SECRET) unlockSurprise();
+  });
   nameEl.addEventListener('blur', () => {
     const v = nameEl.textContent.trim() || '小可爱';
     nameEl.textContent = v;
