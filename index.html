@@ -834,9 +834,32 @@
     white-space: pre-wrap;
     word-break: break-word;
   }
+  .comment-actions { margin-top: 6px; }
+  .comment-reply-btn {
+    border: none; background: transparent; cursor: pointer;
+    font-family: var(--font-body); font-size: 12px;
+    color: var(--accent-deep);
+    padding: 2px 4px; border-radius: 6px;
+    transition: background .2s;
+  }
+  .comment-reply-btn:hover { background: rgba(255,255,255,.6); }
+  .comment-replies {
+    margin-top: 10px;
+    padding-left: 14px;
+    border-left: 2px solid var(--card-border);
+    display: flex; flex-direction: column; gap: 10px;
+  }
+  .comment-reply { background: #fff; }
   .comment-form { display: flex; flex-direction: column; gap: 10px; margin-top: 16px; }
+  .comment-form-reply { margin-top: 12px; }
   .comment-input { min-height: 64px; }
-  .comment-send { align-self: flex-end; }
+  .comment-btn-row { display: flex; justify-content: flex-end; align-items: center; gap: 10px; }
+  .comment-cancel {
+    border: none; background: transparent; cursor: pointer;
+    font-family: var(--font-body); font-size: 13px;
+    color: var(--text-soft); padding: 6px 10px; border-radius: 999px;
+  }
+  .comment-cancel:hover { color: var(--accent-deep); }
 
   /* 锁定态 */
   .mem-lock {
@@ -1371,9 +1394,9 @@
       if (error) throw error;
       return data || [];
     },
-    async addComment(id, body, author) {
+    async addComment(id, body, author, parentId) {
       const { data, error } = await supa.rpc('add_comment', {
-        p_memory_id: id, p_body: body, p_author: author ?? null,
+        p_memory_id: id, p_body: body, p_author: author ?? null, p_parent_id: parentId ?? null,
       });
       if (error) throw error;
       return (data && data[0]) || null;
@@ -1649,7 +1672,7 @@
     return wrap;
   }
 
-  /* 评论区:列表 + 发表 */
+  /* 评论区:列表 + 发表 + 回复 */
   function commentsEl(m) {
     const box = document.createElement('div');
     box.className = 'mem-comments';
@@ -1664,7 +1687,16 @@
     list.textContent = '加载中…';
     box.appendChild(list);
 
-    const renderList = (items) => {
+    const reload = async () => {
+      try {
+        renderList(await Memories.listComments(m.id));
+      } catch (_) {
+        list.innerHTML = '';
+        list.textContent = '留言加载失败了 😢';
+      }
+    };
+
+    function renderList(items) {
       list.innerHTML = '';
       if (!items.length) {
         const empty = document.createElement('div');
@@ -1673,70 +1705,137 @@
         list.appendChild(empty);
         return;
       }
-      items.forEach(c => {
-        const item = document.createElement('div');
-        item.className = 'comment';
-        const head = document.createElement('div');
-        head.className = 'comment-head';
-        const who = document.createElement('b');
-        who.textContent = c.author || '匿名';
-        const when = document.createElement('span');
-        when.textContent = fmtTime(c.created_at);
-        head.appendChild(who);
-        head.appendChild(when);
-        const text = document.createElement('div');
-        text.className = 'comment-text';
-        text.textContent = c.body;
-        item.appendChild(head);
-        item.appendChild(text);
-        list.appendChild(item);
+      const roots = items.filter(c => !c.parent_id);
+      roots.forEach(root => {
+        list.appendChild(commentNode(root, m, root.id, reload, items, false));
       });
-    };
+    }
 
-    Memories.listComments(m.id)
-      .then(renderList)
-      .catch(() => { list.textContent = '留言加载失败了 😢'; });
+    // 发表主留言
+    const form = makeCommentForm({
+      placeholder: '写下你的留言…',
+      onSubmit: async (text, author) => {
+        await Memories.addComment(m.id, text, author, null);
+        await reload();
+      },
+    });
+    box.appendChild(form.el);
 
-    // 发表
-    const form = document.createElement('div');
-    form.className = 'comment-form';
+    reload();
+    return box;
+  }
+
+  /* 单条留言(可含回复) */
+  function commentNode(c, m, rootId, reload, allItems, isReply) {
+    const node = document.createElement('div');
+    node.className = isReply ? 'comment comment-reply' : 'comment';
+
+    const head = document.createElement('div');
+    head.className = 'comment-head';
+    const who = document.createElement('b');
+    who.textContent = c.author || '匿名';
+    const when = document.createElement('span');
+    when.textContent = fmtTime(c.created_at);
+    head.appendChild(who);
+    head.appendChild(when);
+    node.appendChild(head);
+
+    const text = document.createElement('div');
+    text.className = 'comment-text';
+    text.textContent = c.body;
+    node.appendChild(text);
+
+    const actions = document.createElement('div');
+    actions.className = 'comment-actions';
+    const replyBtn = document.createElement('button');
+    replyBtn.className = 'comment-reply-btn';
+    replyBtn.textContent = '回复';
+    actions.appendChild(replyBtn);
+    node.appendChild(actions);
+
+    let formEl = null;
+    replyBtn.addEventListener('click', () => {
+      if (formEl) { formEl.remove(); formEl = null; replyBtn.textContent = '回复'; return; }
+      const f = makeCommentForm({
+        placeholder: '回复 @' + (c.author || '匿名') + '…',
+        compact: true,
+        onSubmit: async (t, author) => {
+          await Memories.addComment(m.id, t, author, rootId);
+          await reload();
+        },
+        onCancel: () => { if (formEl) { formEl.remove(); formEl = null; replyBtn.textContent = '回复'; } },
+      });
+      formEl = f.el;
+      node.appendChild(formEl);
+      replyBtn.textContent = '收起';
+      f.focus();
+    });
+
+    // 回复(仅主留言下展开一层)
+    if (!isReply) {
+      const kids = allItems.filter(x => x.parent_id === c.id);
+      if (kids.length) {
+        const rc = document.createElement('div');
+        rc.className = 'comment-replies';
+        kids.forEach(k => rc.appendChild(commentNode(k, m, rootId, reload, allItems, true)));
+        node.appendChild(rc);
+      }
+    }
+    return node;
+  }
+
+  /* 复用的留言输入表单 */
+  function makeCommentForm({ placeholder, onSubmit, onCancel, compact }) {
+    const wrap = document.createElement('div');
+    wrap.className = 'comment-form' + (compact ? ' comment-form-reply' : '');
+
     const author = document.createElement('input');
     author.className = 'mem-input';
     author.type = 'text';
     author.maxLength = 24;
     author.placeholder = '昵称（可选）';
+
     const body = document.createElement('textarea');
     body.className = 'mem-textarea comment-input';
-    body.placeholder = '写下你的留言…';
-    const send = document.createElement('button');
-    send.className = 'mem-lock-btn comment-send';
-    send.textContent = '发送';
+    body.placeholder = placeholder;
+
     const msg = document.createElement('div');
     msg.className = 'mem-lock-msg';
 
+    const btnRow = document.createElement('div');
+    btnRow.className = 'comment-btn-row';
+    const send = document.createElement('button');
+    send.className = 'mem-lock-btn comment-send';
+    send.textContent = '发送';
+    if (onCancel) {
+      const cancel = document.createElement('button');
+      cancel.className = 'comment-cancel';
+      cancel.textContent = '取消';
+      cancel.addEventListener('click', onCancel);
+      btnRow.appendChild(cancel);
+    }
+    btnRow.appendChild(send);
+
     const submit = async () => {
-      const text = body.value.trim();
-      if (!text) { msg.textContent = '留言不能为空哦'; return; }
+      const t = body.value.trim();
+      if (!t) { msg.textContent = '内容不能为空哦'; return; }
       send.disabled = true; msg.textContent = '';
       try {
-        await Memories.addComment(m.id, text, author.value.trim() || null);
+        await onSubmit(t, author.value.trim() || null);
         body.value = '';
-        const items = await Memories.listComments(m.id);
-        renderList(items);
+        send.disabled = false;
       } catch (err) {
         msg.textContent = err.message || '发送失败,请重试';
-      } finally {
         send.disabled = false;
       }
     };
     send.addEventListener('click', submit);
 
-    form.appendChild(author);
-    form.appendChild(body);
-    form.appendChild(send);
-    box.appendChild(form);
-    box.appendChild(msg);
-    return box;
+    wrap.appendChild(author);
+    wrap.appendChild(body);
+    wrap.appendChild(msg);
+    wrap.appendChild(btnRow);
+    return { el: wrap, focus: () => body.focus() };
   }
 
   /* 问题 / 暗号:在阅读页里解锁 */

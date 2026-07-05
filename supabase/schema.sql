@@ -210,36 +210,43 @@ $$;
 create table if not exists public.comments (
   id          uuid primary key default gen_random_uuid(),
   memory_id   uuid not null references public.memories(id) on delete cascade,
+  parent_id   uuid references public.comments(id) on delete cascade,  -- 回复的目标留言
   author      text,          -- 昵称,可选
   body        text not null,
   created_at  timestamptz not null default now()
 );
+-- 已有旧表时补上 parent_id
+alter table public.comments add column if not exists parent_id uuid references public.comments(id) on delete cascade;
 
 create index if not exists comments_memory_idx on public.comments (memory_id, created_at);
+create index if not exists comments_parent_idx on public.comments (parent_id);
 
 alter table public.comments enable row level security;
 revoke all on public.comments from anon, authenticated;
 
--- ---------- 列出某篇回忆的评论 ----------
+-- ---------- 列出某篇回忆的评论(含回复) ----------
+drop function if exists public.list_comments(uuid);
 create or replace function public.list_comments(p_memory_id uuid)
-returns table (id uuid, author text, body text, created_at timestamptz)
+returns table (id uuid, parent_id uuid, author text, body text, created_at timestamptz)
 language sql
 security definer
 set search_path = public
 as $$
-  select c.id, c.author, c.body, c.created_at
+  select c.id, c.parent_id, c.author, c.body, c.created_at
   from public.comments c
   where c.memory_id = p_memory_id
   order by c.created_at asc;
 $$;
 
--- ---------- 发表一条评论 ----------
+-- ---------- 发表一条评论 / 回复 ----------
+drop function if exists public.add_comment(uuid, text, text);
 create or replace function public.add_comment(
   p_memory_id uuid,
   p_body      text,
-  p_author    text default null
+  p_author    text default null,
+  p_parent_id uuid default null
 )
-returns table (id uuid, author text, body text, created_at timestamptz)
+returns table (id uuid, parent_id uuid, author text, body text, created_at timestamptz)
 language plpgsql
 security definer
 set search_path = public
@@ -256,16 +263,22 @@ begin
   if not exists (select 1 from public.memories m where m.id = p_memory_id) then
     raise exception '这篇回忆不存在';
   end if;
+  if p_parent_id is not null
+     and not exists (select 1 from public.comments c
+                     where c.id = p_parent_id and c.memory_id = p_memory_id) then
+    raise exception '要回复的留言不存在';
+  end if;
 
-  insert into public.comments (memory_id, author, body)
+  insert into public.comments (memory_id, parent_id, author, body)
   values (
     p_memory_id,
+    p_parent_id,
     nullif(btrim(coalesce(p_author, '')), ''),
     btrim(p_body)
   )
   returning * into r;
 
-  return query select r.id, r.author, r.body, r.created_at;
+  return query select r.id, r.parent_id, r.author, r.body, r.created_at;
 end;
 $$;
 
@@ -285,5 +298,5 @@ grant execute on function public.list_memories() to anon, authenticated;
 grant execute on function public.open_memory(uuid, text) to anon, authenticated;
 grant execute on function public.delete_memory(uuid, text) to anon, authenticated;
 grant execute on function public.list_comments(uuid) to anon, authenticated;
-grant execute on function public.add_comment(uuid, text, text) to anon, authenticated;
+grant execute on function public.add_comment(uuid, text, text, uuid) to anon, authenticated;
 grant execute on function public.delete_comment(uuid) to anon, authenticated;
