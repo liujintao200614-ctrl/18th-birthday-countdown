@@ -1052,22 +1052,54 @@
   /* ---- 图片放大 ---- */
   .lightbox {
     position: fixed; inset: 0; z-index: 120;
-    display: flex;                 /* margin:auto 居中,溢出时可滚动不裁切 */
-    padding: 20px;
-    background: rgba(0,0,0,.86);
-    cursor: zoom-out;
+    display: flex; flex-direction: column;
+    background: rgba(0,0,0,.92);
     opacity: 0; transition: opacity .25s;
-    overflow: auto;                /* 长图上下可滚动阅读 */
-    -webkit-overflow-scrolling: touch;
   }
   .lightbox.show { opacity: 1; }
-  .lightbox img {
-    max-width: 100%;
-    height: auto;                  /* 铺满宽度,高度自适应(长截图完整可读) */
-    margin: auto;                  /* 短图居中,长图从顶部开始可滚动 */
+  /* 顶部条:页码 + 关闭 */
+  .lb-bar {
+    flex: none;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 12px 16px;
+    padding-top: max(12px, env(safe-area-inset-top));
+  }
+  .lb-count { color: #fff; font-family: var(--font-num); font-size: 14px; opacity: .85; }
+  .lb-close {
+    flex: none; width: 40px; height: 40px; border-radius: 50%;
+    border: none; cursor: pointer;
+    background: rgba(255,255,255,.18); color: #fff;
+    font-size: 20px; line-height: 1;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .lb-close:active { background: rgba(255,255,255,.34); }
+  /* 图片舞台:长图上下可滚动 */
+  .lb-stage {
+    flex: 1; min-height: 0;
+    display: flex;
+    overflow-y: auto; overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
+    touch-action: pan-y;
+    padding: 0 12px 16px;
+  }
+  .lb-stage img {
+    max-width: 100%; height: auto; margin: auto;
     border-radius: 10px;
     box-shadow: 0 20px 60px rgba(0,0,0,.5);
   }
+  /* 左右切换箭头 */
+  .lb-nav {
+    position: absolute; top: 50%; transform: translateY(-50%);
+    width: 44px; height: 44px; border-radius: 50%;
+    border: none; cursor: pointer; z-index: 2;
+    background: rgba(255,255,255,.16); color: #fff;
+    font-size: 26px; line-height: 1;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .lb-nav:active { background: rgba(255,255,255,.34); }
+  .lb-nav.prev { left: 10px; }
+  .lb-nav.next { right: 10px; }
+  .lb-nav[hidden] { display: none; }
 
   /* ---- 标签输入(发布表单)---- */
   .mem-tags-edit {
@@ -2355,21 +2387,83 @@
       img.src = url;
       img.loading = 'lazy';
       img.alt = '回忆配图';
-      img.addEventListener('click', () => openLightbox(url));
+      img.addEventListener('click', () => openLightbox(images, i));
       cell.appendChild(img);
       grid.appendChild(cell);
     });
     return grid;
   }
 
-  function openLightbox(url) {
+  /* 相册查看器:关闭按钮 + 左右切换 + 页码 + 滑动,长图仍可上下滚动 */
+  function openLightbox(images, startIndex) {
+    images = Array.isArray(images) ? images : [images];
+    let idx = startIndex || 0;
+    const multi = images.length > 1;
+
     const box = document.createElement('div');
     box.className = 'lightbox';
+
+    const bar = document.createElement('div');
+    bar.className = 'lb-bar';
+    const count = document.createElement('span');
+    count.className = 'lb-count';
+    const close = document.createElement('button');
+    close.type = 'button'; close.className = 'lb-close'; close.textContent = '✕';
+    close.setAttribute('aria-label', '关闭');
+    bar.appendChild(count); bar.appendChild(close);
+
+    const stage = document.createElement('div');
+    stage.className = 'lb-stage';
     const img = document.createElement('img');
-    img.src = url;
-    box.appendChild(img);
-    box.addEventListener('click', () => box.remove());
+    img.alt = '回忆配图';
+    stage.appendChild(img);
+
+    const prev = document.createElement('button');
+    prev.type = 'button'; prev.className = 'lb-nav prev'; prev.textContent = '‹';
+    prev.setAttribute('aria-label', '上一张');
+    const next = document.createElement('button');
+    next.type = 'button'; next.className = 'lb-nav next'; next.textContent = '›';
+    next.setAttribute('aria-label', '下一张');
+
+    box.appendChild(bar); box.appendChild(stage);
+    box.appendChild(prev); box.appendChild(next);
+
+    function show(i) {
+      idx = (i + images.length) % images.length;   // 循环切换
+      img.src = images[idx];
+      count.textContent = multi ? (idx + 1) + ' / ' + images.length : '';
+      stage.scrollTop = 0;
+    }
+    prev.hidden = !multi;
+    next.hidden = !multi;
+
+    function destroy() {
+      box.classList.remove('show');
+      setTimeout(() => box.remove(), 220);
+    }
+
+    close.addEventListener('click', e => { e.stopPropagation(); destroy(); });
+    prev.addEventListener('click', e => { e.stopPropagation(); show(idx - 1); });
+    next.addEventListener('click', e => { e.stopPropagation(); show(idx + 1); });
+    // 点遮罩/舞台空白处关闭,点图片本身不关闭(方便长图滑动)
+    box.addEventListener('click', e => { if (e.target === box || e.target === stage) destroy(); });
+
+    // 左右滑动切换(纵向留给长图滚动)
+    let sx = 0, sy = 0;
+    stage.addEventListener('touchstart', e => {
+      const t = e.touches[0]; sx = t.clientX; sy = t.clientY;
+    }, { passive: true });
+    stage.addEventListener('touchend', e => {
+      if (!multi) return;
+      const t = e.changedTouches[0];
+      const dx = t.clientX - sx, dy = t.clientY - sy;
+      if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy) * 1.4) {
+        show(dx < 0 ? idx + 1 : idx - 1);
+      }
+    }, { passive: true });
+
     document.body.appendChild(box);
+    show(idx);
     requestAnimationFrame(() => box.classList.add('show'));
   }
 
