@@ -364,11 +364,87 @@
     align-items: center; justify-content: center;
     text-align: center;
     padding: 20px;
-    background: radial-gradient(circle at 50% 38%, #ffffff 0%, var(--bg-b) 55%, var(--bg-a) 100%);
+    /* 多层梦幻渐变:顶部提亮 + 主题色晕染 + 四角柔光 */
+    background:
+      radial-gradient(circle at 50% 30%, rgba(255,255,255,.9) 0%, transparent 42%),
+      radial-gradient(circle at 18% 12%, rgba(255,255,255,.55) 0%, transparent 34%),
+      radial-gradient(circle at 82% 85%, var(--bg-c) 0%, transparent 46%),
+      radial-gradient(circle at 50% 50%, var(--bg-b) 0%, var(--bg-a) 78%, var(--bg-a) 100%);
     overflow: hidden;
   }
   .surprise.show { display: flex; animation: fadeIn .5s ease both; }
   @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+  /* ---- 梦幻特效层(光斑 / 闪光 / 飘浮心星) ---- */
+  .surprise-fx {
+    position: absolute; inset: 0; z-index: 1;
+    pointer-events: none; overflow: hidden;
+  }
+  /* 虚焦大光斑 bokeh:柔和缓慢漂浮 */
+  .fx-glow {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(14px);
+    opacity: var(--op, .6);
+    background: radial-gradient(circle at 35% 30%,
+                 rgba(255,255,255,.95) 0%,
+                 var(--glow, #ffd9ef) 42%,
+                 transparent 72%);
+    animation: glow-float var(--dur, 16s) ease-in-out var(--delay, 0s) infinite alternate;
+    will-change: transform;
+  }
+  @keyframes glow-float {
+    from { transform: translate(0, 0) scale(1); }
+    to   { transform: translate(var(--dx, 20px), var(--dy, -24px)) scale(var(--sc2, 1.12)); }
+  }
+  /* 闪光小星点:原地明暗呼吸 */
+  .fx-twinkle {
+    position: absolute;
+    color: var(--tc, #fff);
+    font-size: var(--sz, 12px);
+    text-shadow: 0 0 6px currentColor, 0 0 12px currentColor;
+    animation: twinkle var(--dur, 2.4s) ease-in-out var(--delay, 0s) infinite;
+    will-change: transform, opacity;
+  }
+  @keyframes twinkle {
+    0%, 100% { opacity: .15; transform: scale(.5) rotate(0deg); }
+    50%      { opacity: 1;   transform: scale(1) rotate(20deg); }
+  }
+  /* 飘浮的心 / 星 / 亮片:缓缓上浮并摇摆 */
+  .fx-float {
+    position: absolute;
+    font-size: var(--sz, 22px);
+    opacity: 0;
+    filter: drop-shadow(0 4px 6px rgba(150,90,150,.25));
+    animation: float-up var(--dur, 9s) ease-in-out var(--delay, 0s) infinite;
+    will-change: transform, opacity;
+  }
+  @keyframes float-up {
+    0%   { transform: translateY(14vh) translateX(0) rotate(var(--r0,0deg)) scale(.7); opacity: 0; }
+    12%  { opacity: var(--op, .9); }
+    50%  { transform: translateY(-6vh) translateX(var(--sway, 20px)) rotate(var(--r1,15deg)) scale(1); }
+    88%  { opacity: var(--op, .9); }
+    100% { transform: translateY(-24vh) translateX(0) rotate(var(--r0,0deg)) scale(.8); opacity: 0; }
+  }
+  /* ---- 底部云雾 ---- */
+  .surprise-clouds {
+    position: absolute; left: 0; right: 0; bottom: -4%;
+    height: 34%; z-index: 1; pointer-events: none;
+    background:
+      radial-gradient(60% 80% at 18% 100%, rgba(255,255,255,.85) 0%, transparent 70%),
+      radial-gradient(50% 70% at 45% 100%, rgba(255,255,255,.7) 0%, transparent 72%),
+      radial-gradient(65% 85% at 78% 100%, rgba(255,255,255,.82) 0%, transparent 70%),
+      radial-gradient(40% 60% at 92% 100%, rgba(255,255,255,.6) 0%, transparent 74%);
+    filter: blur(6px);
+    animation: clouds-drift 20s ease-in-out infinite alternate;
+  }
+  @keyframes clouds-drift {
+    from { transform: translateX(-2%); }
+    to   { transform: translateX(2%); }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .fx-glow, .fx-twinkle, .fx-float, .surprise-clouds { animation: none; }
+  }
 
   .surprise-stage { display: none; position: relative; z-index: 3; width: min(560px, 92vw); }
   .surprise-stage.active { display: block; animation: rise .6s ease both; }
@@ -776,6 +852,31 @@
   }
   .mem-hint .go { color: var(--accent); font-weight: 700; }
 
+  /* ===== 起点节点(焊死在网站里,不可删改,永远钉在时间线最底部) ===== */
+  .origin-row .mem-date b { color: #b9852f; }
+  .origin-row::before {
+    background: radial-gradient(circle at 35% 30%, #fff, #e0b25c 55%, #c08a2e);
+    border-color: var(--card);
+    box-shadow: 0 0 0 3px #e0b25c, 0 0 14px 2px rgba(224,178,92,.6);
+    width: 17px; height: 17px;
+    animation: origin-pulse 2.8s ease-in-out infinite;
+  }
+  @keyframes origin-pulse {
+    0%, 100% { box-shadow: 0 0 0 3px #e0b25c, 0 0 12px 1px rgba(224,178,92,.5); }
+    50%      { box-shadow: 0 0 0 4px #e0b25c, 0 0 22px 5px rgba(224,178,92,.78); }
+  }
+  /* 起点只是一段焊死的文字,不做成胶囊卡片 */
+  .origin-card {
+    cursor: default;
+    background: none;
+    border: none;
+    border-radius: 0;
+    box-shadow: none;
+    padding: 11px 0 0 10px;
+  }
+  .origin-card:hover { transform: none; box-shadow: none; border-color: transparent; }
+  .origin-card .mem-card-title { white-space: normal; color: var(--accent-deep); }
+
   /* ---- 阅读页(点开胶囊后)---- */
   .mem-reader {
     position: fixed; inset: 0; z-index: 95;
@@ -951,15 +1052,19 @@
   /* ---- 图片放大 ---- */
   .lightbox {
     position: fixed; inset: 0; z-index: 120;
-    display: flex; align-items: center; justify-content: center;
+    display: flex;                 /* margin:auto 居中,溢出时可滚动不裁切 */
     padding: 20px;
     background: rgba(0,0,0,.86);
     cursor: zoom-out;
     opacity: 0; transition: opacity .25s;
+    overflow: auto;                /* 长图上下可滚动阅读 */
+    -webkit-overflow-scrolling: touch;
   }
   .lightbox.show { opacity: 1; }
   .lightbox img {
-    max-width: 100%; max-height: 100%;
+    max-width: 100%;
+    height: auto;                  /* 铺满宽度,高度自适应(长截图完整可读) */
+    margin: auto;                  /* 短图居中,长图从顶部开始可滚动 */
     border-radius: 10px;
     box-shadow: 0 20px 60px rgba(0,0,0,.5);
   }
@@ -1178,6 +1283,8 @@
 <footer>用心做给最好的朋友 💝</footer>
 
 <div class="surprise" id="surprise">
+  <div class="surprise-fx" id="surprise-fx"></div>
+  <div class="surprise-clouds"></div>
   <div class="name-rain" id="name-rain"></div>
 
   <div class="surprise-stage" data-stage="1">
@@ -1483,6 +1590,71 @@
     }
   }
 
+  /* ----- 梦幻背景特效(光斑 / 闪光 / 飘浮心星) ----- */
+  const surpriseFx = byId('surprise-fx');
+  // 柔和马卡龙光斑配色(梦幻、跨主题都好看)
+  const GLOW_COLORS = ['#ffd9ef', '#e6d9ff', '#ffe4c9', '#d9f2ff', '#d9ffe9', '#fff2c9'];
+  const FLOATIES   = ['💗', '💖', '⭐', '✨', '🌸', '💫', '🩷', '🌟'];
+  const rand = (a, b) => a + Math.random() * (b - a);
+
+  function buildSurpriseFx() {
+    surpriseFx.innerHTML = '';
+    const frag = document.createDocumentFragment();
+
+    // 1) 虚焦大光斑
+    for (let i = 0; i < 11; i++) {
+      const g = document.createElement('div');
+      g.className = 'fx-glow';
+      const size = rand(70, 220);
+      g.style.width = g.style.height = size + 'px';
+      g.style.left = rand(-4, 96) + 'vw';
+      g.style.top  = rand(-4, 92) + 'vh';
+      g.style.setProperty('--glow', GLOW_COLORS[i % GLOW_COLORS.length]);
+      g.style.setProperty('--op', rand(.35, .75).toFixed(2));
+      g.style.setProperty('--dx', rand(-40, 40).toFixed(0) + 'px');
+      g.style.setProperty('--dy', rand(-46, 20).toFixed(0) + 'px');
+      g.style.setProperty('--sc2', rand(1.05, 1.28).toFixed(2));
+      g.style.setProperty('--dur', rand(12, 22).toFixed(1) + 's');
+      g.style.setProperty('--delay', rand(-8, 0).toFixed(1) + 's');
+      frag.appendChild(g);
+    }
+
+    // 2) 闪光小星点
+    const twChars = ['✦', '✧', '·', '＊'];
+    const twColors = ['#fff', '#ffe9a8', '#ffd0ea', '#d9c8ff'];
+    for (let i = 0; i < 46; i++) {
+      const t = document.createElement('div');
+      t.className = 'fx-twinkle';
+      t.textContent = twChars[Math.floor(Math.random() * twChars.length)];
+      t.style.left = rand(1, 97) + 'vw';
+      t.style.top  = rand(1, 94) + 'vh';
+      t.style.setProperty('--tc', twColors[Math.floor(Math.random() * twColors.length)]);
+      t.style.setProperty('--sz', rand(8, 20).toFixed(0) + 'px');
+      t.style.setProperty('--dur', rand(1.6, 3.6).toFixed(2) + 's');
+      t.style.setProperty('--delay', rand(-3, 0).toFixed(2) + 's');
+      frag.appendChild(t);
+    }
+
+    // 3) 飘浮的心 / 星 / 花瓣
+    for (let i = 0; i < 20; i++) {
+      const f = document.createElement('div');
+      f.className = 'fx-float';
+      f.textContent = FLOATIES[Math.floor(Math.random() * FLOATIES.length)];
+      f.style.left = rand(2, 94) + 'vw';
+      f.style.bottom = rand(-6, 18) + 'vh';
+      f.style.setProperty('--sz', rand(16, 34).toFixed(0) + 'px');
+      f.style.setProperty('--op', rand(.7, 1).toFixed(2));
+      f.style.setProperty('--sway', rand(-36, 36).toFixed(0) + 'px');
+      f.style.setProperty('--r0', rand(-18, 18).toFixed(0) + 'deg');
+      f.style.setProperty('--r1', rand(-24, 24).toFixed(0) + 'deg');
+      f.style.setProperty('--dur', rand(7, 13).toFixed(1) + 's');
+      f.style.setProperty('--delay', rand(-10, 0).toFixed(1) + 's');
+      frag.appendChild(f);
+    }
+
+    surpriseFx.appendChild(frag);
+  }
+
   /* ----- 震动 ----- */
   function shake(pattern) {
     surprise.classList.remove('shake');
@@ -1556,6 +1728,7 @@
     if (unlocked) return; // 防止动画播放过程中重复触发
     unlocked = true;
     surprise.classList.add('show');
+    buildSurpriseFx();
     showStage(1);
     burstConfetti(70);
     startMusic();          // 由用户输入触发,可自动播放
@@ -1901,8 +2074,9 @@
 
     memListBox.innerHTML = '';
     if (!allMemories.length) {
-      memListBox.classList.remove('has-items');
-      memListBox.appendChild(stateEl('还没有回忆呢,\n写下第一段吧 ✍️'));
+      // 还没有动态回忆:只亮出焊死的起点,让时间线有根
+      memListBox.classList.add('has-items');
+      memListBox.appendChild(renderOrigin());
       return;
     }
     if (!items.length) {
@@ -1912,6 +2086,7 @@
     }
     memListBox.classList.add('has-items');
     items.forEach(m => memListBox.appendChild(renderRow(m)));
+    if (!q) memListBox.appendChild(renderOrigin());  // 未搜索时,起点永远钉在时间线最底部
   }
 
   /* ---- 标签栏(所有出现过的标签,点击即筛选)---- */
@@ -2034,6 +2209,38 @@
     }
 
     card.addEventListener('click', () => openReader(m));
+    row.appendChild(card);
+    return row;
+  }
+
+  /* ---- 起点:焊死在网站里的第一枚节点(不经数据库,不可删不可改) ---- */
+  const ORIGIN = {
+    date: new Date('2026-06-05T00:00:00+08:00'),
+    title: '第一次在结伴交友加上好友',
+  };
+  function renderOrigin() {
+    const row = document.createElement('div');
+    row.className = 'mem-row origin-row';
+
+    const date = document.createElement('time');
+    date.className = 'mem-date';
+    const dtop = document.createElement('b');
+    dtop.textContent = pad(ORIGIN.date.getMonth() + 1) + '/' + pad(ORIGIN.date.getDate());
+    const dsub = document.createElement('span');
+    dsub.textContent = ORIGIN.date.getFullYear();
+    date.appendChild(dtop);
+    date.appendChild(dsub);
+    row.appendChild(date);
+
+    const card = document.createElement('div');
+    card.className = 'mem-card origin-card';
+    const top = document.createElement('div');
+    top.className = 'mem-card-top';
+    const title = document.createElement('div');
+    title.className = 'mem-card-title';
+    title.textContent = ORIGIN.title;
+    top.appendChild(title);
+    card.appendChild(top);
     row.appendChild(card);
     return row;
   }
