@@ -2380,7 +2380,7 @@
   function imageGallery(images) {
     const grid = document.createElement('div');
     grid.className = 'reader-gallery' + (images.length === 1 ? ' single' : '');
-    images.forEach(url => {
+    images.forEach((url, i) => {
       const cell = document.createElement('div');
       cell.className = 'gallery-cell';
       const img = document.createElement('img');
