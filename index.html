@@ -209,18 +209,93 @@
     margin-bottom: 4vh;
   }
 
-  .cake {
-    display: inline-block;
+  /* ---------- CSS 蛋糕模型 ---------- */
+  .cake3d {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
     cursor: pointer;
-    font-size: clamp(40px, 7vw, 64px);
     animation: bounce 2.2s ease-in-out infinite;
-    filter: drop-shadow(0 8px 14px var(--shadow));
+    filter: drop-shadow(0 10px 14px var(--shadow));
     transition: transform .2s;
   }
-  .cake:active { transform: scale(.85); }
+  .cake3d:active { transform: scale(.9); }
   @keyframes bounce {
     0%, 100% { transform: translateY(0) rotate(-4deg); }
     50%      { transform: translateY(-10px) rotate(4deg); }
+  }
+
+  .cake-candles {
+    display: flex;
+    align-items: flex-end;
+    gap: clamp(7px, 1.8vw, 11px);
+    margin-bottom: -4px;
+    z-index: 3;
+    position: relative;
+  }
+  .candle {
+    position: relative;
+    width: clamp(4px, 1vw, 6px);
+    height: clamp(20px, 4.2vw, 28px);
+    border-radius: 2px;
+    background: repeating-linear-gradient(180deg, #fff 0 4px, var(--accent-deep) 4px 8px);
+  }
+  .candle-tall { height: clamp(27px, 5.6vw, 37px); }
+  .flame {
+    position: absolute;
+    left: 50%;
+    top: clamp(-15px, -3.2vw, -11px);
+    width: clamp(8px, 1.8vw, 11px);
+    height: clamp(11px, 2.4vw, 15px);
+    transform: translateX(-50%);
+    border-radius: 50% 50% 50% 50% / 65% 65% 35% 35%;
+    background: radial-gradient(circle at 50% 32%, #fff7c9 0%, #ffbb4d 55%, #ff7a3d 100%);
+    filter: drop-shadow(0 0 5px #ffbb4d);
+    animation: flame-flick 1s ease-in-out infinite alternate;
+  }
+  @keyframes flame-flick {
+    0%   { transform: translateX(-50%) scale(1) rotate(-5deg); }
+    100% { transform: translateX(-50%) scale(1.14) rotate(5deg); }
+  }
+
+  .cake-top {
+    position: relative;
+    width: clamp(64px, 13vw, 96px);
+    height: clamp(30px, 6vw, 42px);
+    background: linear-gradient(180deg, #fffefb 0%, #fef2e4 100%);
+    border-radius: 14px 14px 8px 8px;
+    box-shadow: inset 0 -6px 0 rgba(0,0,0,.05);
+    z-index: 2;
+  }
+  .cake-top::after {
+    content: '';
+    position: absolute;
+    left: -1px; right: -1px; bottom: -7px;
+    height: 10px;
+    background: radial-gradient(circle at 10px 0, #fef2e4 7px, transparent 7.3px) 0 0 / 20px 10px repeat-x;
+  }
+  .cake-cherry {
+    position: absolute;
+    top: clamp(-16px, -3.4vw, -12px);
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: clamp(16px, 3.4vw, 22px);
+    z-index: 4;
+  }
+
+  .cake-base {
+    position: relative;
+    width: clamp(96px, 20vw, 144px);
+    height: clamp(46px, 9vw, 66px);
+    margin-top: -8px;
+    border-radius: 8px 8px 22px 22px;
+    background-image:
+      radial-gradient(rgba(255,255,255,.5) 3px, transparent 3px),
+      linear-gradient(180deg, var(--accent) 0%, var(--accent-deep) 100%);
+    background-size: 16px 16px, 100% 100%;
+    background-position: 4px 6px, 0 0;
+    box-shadow: inset 0 -10px 0 rgba(0,0,0,.08);
+    z-index: 1;
   }
   .cake-hint {
     font-size: 12px;
@@ -344,6 +419,123 @@
   }
   body.done .celebrate-title { display: block; }
   body.done .countdown, body.done .progress-wrap, body.done .subtitle { display: none; }
+
+  /* ========== 最后一天 → 最后1分钟 → 最后10秒 大倒计时 ========== */
+  /* 「就是今天啦」横幅 */
+  .today-banner {
+    display: none;
+    font-family: var(--font-display);
+    font-size: clamp(18px, 4.4vw, 28px);
+    color: var(--accent-deep);
+    margin: 10px 0 2px;
+    animation: bounce 1.8s ease-in-out infinite;
+  }
+  body[data-phase="lastday"] .today-banner,
+  body[data-phase="lastmin"] .today-banner { display: block; }
+  /* 最后一天:去掉卡片外壳,时分秒变成发光大字,更有氛围感 */
+  body[data-phase="lastday"] .unit:first-child { display: none; }
+  body[data-phase="lastday"] .unit {
+    background: none; border: none; box-shadow: none;
+    width: auto; padding: 0;
+  }
+  body[data-phase="lastday"] .unit::after { content: none; }
+  body[data-phase="lastday"] .unit .num {
+    font-size: clamp(46px, 12vw, 86px);
+    text-shadow: 0 0 26px var(--accent), 0 6px 18px var(--shadow);
+  }
+  body[data-phase="lastday"] .unit:last-child .num { animation: heartbeat 1s ease-in-out infinite; }
+  body[data-phase="lastday"] .countdown { gap: clamp(20px, 6vw, 40px); }
+  @keyframes heartbeat { 0%,100%{transform:scale(1)} 14%{transform:scale(1.2)} 28%{transform:scale(1)} }
+  /* 最后1分钟:只剩一个干净的超大秒数(去掉卡片框/阴影/装饰) */
+  /* 窄屏下 .countdown 会变成 2 列网格,只剩一个格子时会偏向左列,这里强制改回整体居中 */
+  body[data-phase="lastday"] .countdown,
+  body[data-phase="lastmin"] .countdown {
+    display: flex;
+    justify-content: center;
+  }
+  body[data-phase="lastmin"] .unit { display: none; }
+  body[data-phase="lastmin"] .unit:last-child {
+    display: block;
+    background: none; border: none; box-shadow: none;
+    width: auto; padding: 0; margin: 4vh auto 2vh; transform: none;
+  }
+  body[data-phase="lastmin"] .unit:last-child::after { content: none; }   /* 去掉角标装饰 */
+  body[data-phase="lastmin"] .unit:last-child .num {
+    font-size: clamp(120px, 40vw, 260px);
+    line-height: .95;
+    animation: heartbeat 1s ease-in-out infinite;
+    text-shadow: 0 8px 30px var(--shadow);
+  }
+  body[data-phase="lastmin"] .unit:last-child .label {
+    display: block; margin-top: 6px;
+    font-size: clamp(16px, 4vw, 22px); letter-spacing: 8px;
+  }
+  body[data-phase="lastmin"] .progress-wrap { opacity: .3; }
+
+  /* 背景漂浮粒子层(最后一天) */
+  .page-fx { position: fixed; inset: 0; z-index: 0; pointer-events: none; overflow: hidden; display: none; }
+  body[data-phase="lastday"] .page-fx,
+  body[data-phase="lastmin"] .page-fx { display: block; }
+
+
+  /* ===== 最后10秒全屏大倒计时 ===== */
+  .final {
+    position: fixed; inset: 0; z-index: 150;
+    display: none; align-items: center; justify-content: center;
+    background: radial-gradient(circle at 50% 44%, rgba(40,12,55,.72), rgba(10,4,20,.94));
+    -webkit-backdrop-filter: blur(3px); backdrop-filter: blur(3px);
+    overflow: hidden;
+  }
+  .final.show { display: flex; }
+  .final-num {
+    font-family: var(--font-num, var(--font-display));
+    font-weight: 900;
+    font-size: min(52vw, 46vh);
+    line-height: 1;
+    color: #fff;
+    text-shadow: 0 0 40px rgba(255,255,255,.6), 0 0 90px var(--accent);
+  }
+  .final-num.tick { animation: final-pop .9s cubic-bezier(.2,.9,.3,1.4); }
+  @keyframes final-pop {
+    0% { transform: scale(2.3); opacity: 0; }
+    28% { transform: scale(1); opacity: 1; }
+    100% { transform: scale(.82); opacity: .8; }
+  }
+  .final-num.warn { color: #ffd66e; text-shadow: 0 0 40px rgba(255,190,80,.7), 0 0 90px #ff8f57; }
+  .final-num.hot  { color: #ff7fae; text-shadow: 0 0 44px rgba(255,120,170,.85), 0 0 100px #ff4d8a; }
+  /* 光波 */
+  .final-ring {
+    position: absolute; left: 50%; top: 44%;
+    width: 40px; height: 40px; margin: -20px 0 0 -20px;
+    border-radius: 50%; border: 3px solid rgba(255,255,255,.8);
+    pointer-events: none; opacity: 0;
+  }
+  .final-ring.go { animation: ring-out 1s ease-out forwards; }
+  @keyframes ring-out {
+    0% { opacity: .8; transform: scale(1); }
+    100% { opacity: 0; transform: scale(26); }
+  }
+  /* 归零祝福 */
+  .final-msg {
+    display: none;
+    font-family: var(--font-display);
+    font-size: clamp(30px, 8vw, 68px);
+    color: #fff; text-align: center; line-height: 1.35;
+    text-shadow: 0 0 30px var(--accent), 0 4px 20px rgba(0,0,0,.4);
+    padding: 20px;
+    animation: bounce 1.4s ease-in-out infinite;
+  }
+  .final.done .final-num, .final.done .final-ring { display: none; }
+  .final.done .final-msg { display: block; }
+  .final-hint {
+    display: block; margin-top: 26px;
+    font-size: clamp(14px, 3.4vw, 18px);
+    color: rgba(255,255,255,.8);
+    letter-spacing: 2px; animation: none;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .final-num.tick, .final-msg, .today-banner { animation: none; }
+  }
 
   /* ---------- 撒花 ---------- */
   .confetti {
@@ -1270,6 +1462,7 @@
 <body>
 
 <div id="particles"></div>
+<div class="page-fx" id="page-fx"></div>
 
 <header class="site-top">
   <nav class="theme-switcher" aria-label="切换主题">
@@ -1282,14 +1475,25 @@
 </header>
 
 <main>
-  <span class="cake" id="cake" title="点我撒花!">🎂</span>
+  <div class="cake3d" id="cake" title="点我撒花!">
+    <div class="cake-candles">
+      <span class="candle"><span class="flame"></span></span>
+      <span class="candle candle-tall"><span class="flame"></span></span>
+      <span class="candle"><span class="flame"></span></span>
+    </div>
+    <div class="cake-top">
+      <span class="cake-cherry">🍒</span>
+    </div>
+    <div class="cake-base"></div>
+  </div>
   <p class="cake-hint">(点一下蛋糕有惊喜哦)</p>
 
   <p class="subtitle">・ 距 离 ・</p>
   <h1><span id="girl-name" contenteditable="true" spellcheck="false">小可爱</span> 的 18 岁生日</h1>
   <p class="date-line">2026 年 9 月 28 日 · 点击名字可以改成她的名字哦</p>
+  <p class="today-banner">🎂 就是今天啦!今天是胡紫仙的 18 岁生日 🎂</p>
 
-  <h2 class="celebrate-title">🎉 生日快乐!欢迎来到 18 岁 🎉</h2>
+  <h2 class="celebrate-title">🎉 生日快乐,胡紫仙!欢迎来到 18 岁 🎂</h2>
 
   <div class="countdown" id="countdown">
     <div class="unit" data-deco="🎀"><span class="num" id="d">--</span><span class="label">天</span></div>
@@ -1455,6 +1659,13 @@
   </div>
 </div>
 
+<!-- ========== 最后10秒全屏大倒计时 ========== -->
+<div class="final" id="final">
+  <div class="final-num" id="final-num">10</div>
+  <div class="final-msg">🎂<br>生日快乐,胡紫仙!<br>欢迎来到 18 岁 🎉<span class="final-hint">轻触进入 →</span></div>
+</div>
+
+
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
   /* ================= 配置 ================= */
@@ -1521,19 +1732,35 @@
     }
   }
 
+  /* ===== 阶段控制:最后一天 → 最后1分钟 → 最后10秒 → 归零庆祝 ===== */
+  let testTarget = null;                       // DEV:测试用,临时把生日设到近处
+  function nowDiff() { return (testTarget || TARGET) - Date.now(); }
+  function computePhase(diff) {
+    if (diff <= 0)        return 'done';
+    if (diff <= 10000)    return 'final';       // 最后 10 秒
+    if (diff <= 60000)    return 'lastmin';     // 最后 1 分钟
+    if (diff <= 86400000) return 'lastday';     // 最后 1 天
+    return 'normal';
+  }
+
+  let phase = '';
   let celebrated = false;
+  let celebrateConfettiTimer = null;
+  function startCelebrateConfettiLoop() {
+    stopCelebrateConfettiLoop();
+    celebrateConfettiTimer = setInterval(() => burstConfetti(60), 5000);
+  }
+  function stopCelebrateConfettiLoop() {
+    clearInterval(celebrateConfettiTimer);
+    celebrateConfettiTimer = null;
+  }
   function tick() {
-    const now = new Date();
-    let diff = TARGET - now;
+    const diff = nowDiff();
+    const p = computePhase(diff);
+    if (p !== phase) setPhase(p);
+    if (p === 'final' || p === 'done') return;  // 这两态由全屏大倒计时接管数字
 
-    if (diff <= 0) {
-      document.body.classList.add('done');
-      if (!celebrated) { celebrated = true; burstConfetti(160); }
-      setNum(el.d, '0'); setNum(el.h, '00'); setNum(el.m, '00'); setNum(el.s, '00');
-      return;
-    }
-
-    const day = Math.floor(diff / 86400000);
+    const day = Math.max(0, Math.floor(diff / 86400000));
     const hr  = Math.floor(diff / 3600000) % 24;
     const min = Math.floor(diff / 60000) % 60;
     const sec = Math.floor(diff / 1000) % 60;
@@ -1542,11 +1769,180 @@
     setNum(el.m, pad(min));
     setNum(el.s, pad(sec));
 
-    const pct = Math.min(100, Math.max(0, (now - START) / (TARGET - START) * 100));
+    const pct = Math.min(100, Math.max(0, (Date.now() - START) / (TARGET - START) * 100));
     byId('pct').textContent = pct.toFixed(1) + '%';
     byId('bar-fill').style.width = pct + '%';
     byId('runner').style.left = pct + '%';
   }
+
+  function setPhase(p) {
+    phase = p;
+    document.body.dataset.phase = p;
+    if (p === 'lastday' || p === 'lastmin') { hideFinal(); buildPageFx(); }
+    else if (p === 'final') startFinal();
+    else if (p === 'done')  celebrateNow();
+    else { document.body.classList.remove('done'); hideFinal(); }
+  }
+
+  /* ---- 背景漂浮粒子(最后一天) ---- */
+  let pageFxBuilt = false;
+  function buildPageFx() {
+    const box = byId('page-fx');
+    if (pageFxBuilt) return; pageFxBuilt = true;
+    const FE = ['💗','💖','⭐','✨','🌸','💫','🎀','🎂'];
+    const GLOW = ['#ffd9ef', '#ffe4c9', '#fff2c9', '#ffd0ea'];
+    const TW = ['✦', '✧', '·', '＊'];
+    const TWC = ['#fff', '#ffe9a8', '#ffd0ea'];
+    const rnd = (a,b) => a + Math.random() * (b - a);
+    const frag = document.createDocumentFragment();
+
+    // 虚焦光斑,拉出暖暖的氛围光
+    for (let i = 0; i < 6; i++) {
+      const g = document.createElement('div');
+      g.className = 'fx-glow';
+      const size = rnd(120, 260);
+      g.style.width = g.style.height = size + 'px';
+      g.style.left = rnd(-6, 90) + 'vw';
+      g.style.top  = rnd(-6, 88) + 'vh';
+      g.style.setProperty('--glow', GLOW[i % GLOW.length]);
+      g.style.setProperty('--op', rnd(.28, .55).toFixed(2));
+      g.style.setProperty('--dx', rnd(-40, 40).toFixed(0) + 'px');
+      g.style.setProperty('--dy', rnd(-46, 20).toFixed(0) + 'px');
+      g.style.setProperty('--sc2', rnd(1.05, 1.25).toFixed(2));
+      g.style.setProperty('--dur', rnd(14, 24).toFixed(1) + 's');
+      g.style.setProperty('--delay', rnd(-10, 0).toFixed(1) + 's');
+      frag.appendChild(g);
+    }
+    // 闪烁小星点
+    for (let i = 0; i < 30; i++) {
+      const t = document.createElement('div');
+      t.className = 'fx-twinkle';
+      t.textContent = TW[Math.floor(Math.random() * TW.length)];
+      t.style.left = rnd(1, 97) + 'vw';
+      t.style.top  = rnd(1, 92) + 'vh';
+      t.style.setProperty('--tc', TWC[Math.floor(Math.random() * TWC.length)]);
+      t.style.setProperty('--sz', rnd(8, 18).toFixed(0) + 'px');
+      t.style.setProperty('--dur', rnd(1.6, 3.6).toFixed(2) + 's');
+      t.style.setProperty('--delay', rnd(-3, 0).toFixed(2) + 's');
+      frag.appendChild(t);
+    }
+    // 飘浮的心 / 星 / 亮片
+    for (let i = 0; i < 22; i++) {
+      const f = document.createElement('div');
+      f.className = 'fx-float';
+      f.textContent = FE[Math.floor(Math.random() * FE.length)];
+      f.style.left = rnd(2, 94) + 'vw';
+      f.style.bottom = rnd(-6, 16) + 'vh';
+      f.style.setProperty('--sz', rnd(16, 34).toFixed(0) + 'px');
+      f.style.setProperty('--op', rnd(.6, 1).toFixed(2));
+      f.style.setProperty('--sway', rnd(-34, 34).toFixed(0) + 'px');
+      f.style.setProperty('--r0', rnd(-16, 16).toFixed(0) + 'deg');
+      f.style.setProperty('--r1', rnd(-22, 22).toFixed(0) + 'deg');
+      f.style.setProperty('--dur', rnd(8, 14).toFixed(1) + 's');
+      f.style.setProperty('--delay', rnd(-12, 0).toFixed(1) + 's');
+      frag.appendChild(f);
+    }
+    box.appendChild(frag);
+  }
+
+  /* ---- 最后10秒全屏大倒计时 ---- */
+  let finalRAF = null, lastSec = null;
+  function startFinal() {
+    const box = byId('final');
+    box.classList.add('show');
+    box.classList.remove('done');
+    lastSec = null;
+    cancelAnimationFrame(finalRAF);
+    const loop = () => {
+      const diff = nowDiff();
+      if (diff <= 0) { finalZero(); return; }
+      const sec = Math.max(1, Math.ceil(diff / 1000));
+      if (sec !== lastSec) { lastSec = sec; renderFinalNum(sec); }
+      finalRAF = requestAnimationFrame(loop);
+    };
+    finalRAF = requestAnimationFrame(loop);
+  }
+  function renderFinalNum(sec) {
+    const n = byId('final-num');
+    n.textContent = sec;
+    n.className = 'final-num';
+    void n.offsetWidth;
+    n.classList.add('tick');
+    if (sec <= 3) n.classList.add('hot');
+    else if (sec <= 6) n.classList.add('warn');
+    spawnRing();
+    burstConfetti(22);
+    vibrate([60]);
+    beep(sec <= 3 ? 900 : 660, .12);
+  }
+  function spawnRing() {
+    const box = byId('final');
+    const r = document.createElement('div');
+    r.className = 'final-ring go';
+    box.appendChild(r);
+    setTimeout(() => r.remove(), 1000);
+  }
+  function finalZero() {
+    cancelAnimationFrame(finalRAF);
+    phase = 'done'; document.body.dataset.phase = 'done';
+    const box = byId('final');
+    box.classList.add('show', 'done');
+    document.body.classList.add('done');
+    if (!celebrated) {
+      celebrated = true;
+      burstConfetti(220);
+      vibrate([200, 80, 200, 80, 320]);
+      startMusic();
+      startCelebrateConfettiLoop();
+      setTimeout(() => burstConfetti(160), 700);
+      setTimeout(() => burstConfetti(160), 1500);
+    }
+  }
+  function celebrateNow() {
+    // 直接跳到庆祝(测试"归零庆祝"用):不播 10 秒,直接祝福
+    const box = byId('final');
+    box.classList.add('show', 'done');
+    document.body.classList.add('done');
+    if (!celebrated) {
+      celebrated = true;
+      burstConfetti(220); vibrate([200, 80, 200]); startMusic();
+      startCelebrateConfettiLoop();
+    }
+  }
+  function hideFinal() {
+    cancelAnimationFrame(finalRAF);
+    const box = byId('final');
+    box.classList.remove('show', 'done');
+  }
+  // 归零庆祝态:轻触全屏祝福即可进入下方庆祝页
+  byId('final').addEventListener('click', () => {
+    if (byId('final').classList.contains('done')) hideFinal();
+  });
+
+  /* ---- 滴答提示音(尽力播放,不强求提前解锁) ---- */
+  function beep(freq, dur) {
+    try {
+      if (!audioCtx) {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        masterGain = audioCtx.createGain();
+        masterGain.gain.value = .55;
+        masterGain.connect(audioCtx.destination);
+      }
+      if (audioCtx.state === 'suspended') audioCtx.resume();
+      const t = audioCtx.currentTime;
+      const o = audioCtx.createOscillator();
+      const g = audioCtx.createGain();
+      o.type = 'triangle';
+      o.frequency.value = freq;
+      g.gain.setValueAtTime(0, t);
+      g.gain.linearRampToValueAtTime(.4, t + .01);
+      g.gain.exponentialRampToValueAtTime(.001, t + dur);
+      o.connect(g).connect(masterGain);
+      o.start(t); o.stop(t + dur + .02);
+    } catch (e) {}
+  }
+  function vibrate(p) { if (navigator.vibrate) navigator.vibrate(p); }
+
   tick();
   setInterval(tick, 1000);
 
