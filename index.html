@@ -4,6 +4,14 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no, viewport-fit=cover" />
 <title>✨ 18岁生日倒计时 ✨</title>
+<link rel="manifest" href="/manifest.webmanifest" />
+<meta name="theme-color" content="#ff6fa5" />
+<link rel="icon" type="image/png" sizes="32x32" href="/icons/favicon-32.png" />
+<link rel="icon" type="image/png" sizes="16x16" href="/icons/favicon-16.png" />
+<link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-title" content="生日倒计时" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=ZCOOL+KuaiLe&family=Baloo+2:wght@600;800&family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet" />
@@ -788,6 +796,53 @@
   .mem-entry:hover { transform: translateY(-2px); box-shadow: 0 12px 28px var(--shadow); }
   .mem-entry:active { transform: scale(.97); }
 
+  .top-actions {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    justify-content: center;
+    flex-wrap: wrap;
+    width: 100%;
+  }
+  .pwa-install[hidden] { display: none !important; }
+
+  .pwa-hint {
+    position: fixed; inset: 0; z-index: 95;
+    display: none;
+    align-items: center; justify-content: center;
+    padding: 20px;
+    background: rgba(0,0,0,.35);
+    backdrop-filter: blur(4px);
+  }
+  .pwa-hint.show { display: flex; animation: fadeIn .3s ease both; }
+  .pwa-hint-card {
+    position: relative;
+    width: min(360px, 92vw);
+    background: var(--card);
+    border: 2px solid var(--card-border);
+    border-radius: 24px;
+    padding: 28px 24px 24px;
+    box-shadow: 0 16px 40px var(--shadow);
+    text-align: center;
+  }
+  .pwa-hint-card h3 {
+    font-family: var(--font-display);
+    font-size: 22px;
+    margin-bottom: 16px;
+    color: var(--text);
+  }
+  .pwa-hint-card p {
+    font-size: 15px;
+    line-height: 1.7;
+    color: var(--text-soft);
+    margin-bottom: 10px;
+    text-align: left;
+  }
+  .pwa-hint-card .mem-close {
+    position: absolute;
+    top: 12px; right: 12px;
+  }
+
   /* 面板 */
   .mem {
     position: fixed; inset: 0; z-index: 90;
@@ -1425,7 +1480,8 @@
     .theme-switcher::-webkit-scrollbar { display: none; }
     .theme-btn { font-size: 12px; padding: 6px 10px; gap: 4px; flex: 0 0 auto; }
     .theme-btn .dot { width: 11px; height: 11px; }
-    .mem-entry {
+    .top-actions { flex-direction: column; }
+    .top-actions .mem-entry {
       width: 100%;
       padding: 13px 20px;
       font-size: 16px;
@@ -1442,7 +1498,7 @@
       flex-wrap: wrap;
       gap: 14px 18px;
     }
-    .mem-entry {
+    .top-actions .mem-entry {
       flex: none;
       min-width: 120px;
     }
@@ -1471,7 +1527,10 @@
     <button class="theme-btn" data-set="peach"><span class="dot"></span>蜜桃汽水</button>
     <button class="theme-btn" data-set="mint"><span class="dot"></span>薄荷软糖</button>
   </nav>
-  <button class="mem-entry" id="mem-open">📖 回忆</button>
+  <div class="top-actions">
+    <button class="mem-entry pwa-install" id="pwa-install" type="button" hidden>📲 加到主屏幕</button>
+    <button class="mem-entry" id="mem-open" type="button">📖 回忆</button>
+  </div>
 </header>
 
 <main>
@@ -1540,6 +1599,22 @@
       <h3>✨ 惊喜解锁成功!</h3>
       <p>愿你的 18 岁,<br>充满快乐与幸运! 🥳</p>
       <button class="enter-btn" id="enter-btn">← 返回倒计时</button>
+    </div>
+  </div>
+</div>
+
+<div class="pwa-hint" id="pwa-hint" hidden>
+  <div class="pwa-hint-card">
+    <button class="mem-close" id="pwa-hint-close" type="button" aria-label="关闭">✕</button>
+    <h3>📲 加到主屏幕</h3>
+    <div data-hint="ios" hidden>
+      <p>1. 点 Safari 底部的 <strong>分享</strong> 按钮 □↑</p>
+      <p>2. 向下滑,选择 <strong>「添加到主屏幕」</strong></p>
+      <p>3. 点右上角 <strong>添加</strong> 就好啦</p>
+    </div>
+    <div data-hint="generic" hidden>
+      <p>Chrome / Edge: 点地址栏旁的 <strong>安装</strong> 图标,或菜单 ⋮ → <strong>安装应用</strong></p>
+      <p>若暂时看不到,刷新页面后再试一次~</p>
     </div>
   </div>
 </div>
@@ -3128,6 +3203,65 @@
 
   /* ================= 初始化 ================= */
   setTheme(localStorage.getItem('bday-theme') || 'strawberry');
+
+  /* ================= PWA:安装按钮 + Service Worker ================= */
+  (function initPwaInstall() {
+    const installBtn = document.getElementById('pwa-install');
+    const hintEl = document.getElementById('pwa-hint');
+    const hintClose = document.getElementById('pwa-hint-close');
+    if (!installBtn || location.protocol === 'file:') return;
+
+    let deferredPrompt = null;
+    const isStandalone = () =>
+      window.matchMedia('(display-mode: standalone)').matches ||
+      window.navigator.standalone === true;
+    const isIos = () => /iPad|iPhone|iPod/.test(navigator.userAgent);
+
+    function showHint(mode) {
+      hintEl.querySelector('[data-hint="ios"]').hidden = mode !== 'ios';
+      hintEl.querySelector('[data-hint="generic"]').hidden = mode !== 'generic';
+      hintEl.hidden = false;
+      hintEl.classList.add('show');
+    }
+    function hideHint() {
+      hintEl.classList.remove('show');
+      hintEl.hidden = true;
+    }
+
+    hintClose.addEventListener('click', hideHint);
+    hintEl.addEventListener('click', e => { if (e.target === hintEl) hideHint(); });
+
+    if (isStandalone()) return;
+
+    installBtn.hidden = false;
+
+    window.addEventListener('beforeinstallprompt', e => {
+      e.preventDefault();
+      deferredPrompt = e;
+    });
+
+    window.addEventListener('appinstalled', () => {
+      installBtn.hidden = true;
+      deferredPrompt = null;
+    });
+
+    installBtn.addEventListener('click', async () => {
+      if (deferredPrompt) {
+        deferredPrompt.prompt();
+        const { outcome } = await deferredPrompt.userChoice;
+        if (outcome === 'accepted') installBtn.hidden = true;
+        deferredPrompt = null;
+        return;
+      }
+      showHint(isIos() ? 'ios' : 'generic');
+    });
+  })();
+
+  if ('serviceWorker' in navigator && location.protocol !== 'file:') {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/sw.js').catch(() => {});
+    });
+  }
 </script>
 </body>
 </html>
