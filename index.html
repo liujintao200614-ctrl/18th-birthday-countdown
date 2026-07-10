@@ -1612,6 +1612,12 @@
       <p>2. 向下滑,选择 <strong>「添加到主屏幕」</strong></p>
       <p>3. 点右上角 <strong>添加</strong> 就好啦</p>
     </div>
+    <div data-hint="android" hidden>
+      <p><strong>Chrome 浏览器</strong>：点右上角 <strong>⋮</strong> → <strong>「安装应用」</strong></p>
+      <p>或在本页多停留几秒后，再点一次「加到主屏幕」按钮</p>
+      <p><strong>其他浏览器</strong>：点菜单 <strong>⋮</strong> → <strong>「添加到主屏幕」</strong></p>
+      <p>若没有安装选项，请用 <strong>Chrome</strong> 打开：<strong id="pwa-hint-host"></strong></p>
+    </div>
     <div data-hint="generic" hidden>
       <p>Chrome / Edge: 点地址栏旁的 <strong>安装</strong> 图标,或菜单 ⋮ → <strong>安装应用</strong></p>
       <p>若暂时看不到,刷新页面后再试一次~</p>
@@ -3209,23 +3215,48 @@
     const installBtn = document.getElementById('pwa-install');
     const hintEl = document.getElementById('pwa-hint');
     const hintClose = document.getElementById('pwa-hint-close');
+    const hintHost = document.getElementById('pwa-hint-host');
     if (!installBtn || location.protocol === 'file:') return;
 
     let deferredPrompt = null;
+    let installing = false;
     const isStandalone = () =>
       window.matchMedia('(display-mode: standalone)').matches ||
       window.navigator.standalone === true;
     const isIos = () => /iPad|iPhone|iPod/.test(navigator.userAgent);
+    const isAndroid = () => /Android/i.test(navigator.userAgent);
+
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/sw.js').catch(() => {});
+    }
 
     function showHint(mode) {
       hintEl.querySelector('[data-hint="ios"]').hidden = mode !== 'ios';
+      hintEl.querySelector('[data-hint="android"]').hidden = mode !== 'android';
       hintEl.querySelector('[data-hint="generic"]').hidden = mode !== 'generic';
+      if (hintHost) hintHost.textContent = location.host;
       hintEl.hidden = false;
       hintEl.classList.add('show');
     }
     function hideHint() {
       hintEl.classList.remove('show');
       hintEl.hidden = true;
+    }
+
+    function waitForPrompt(ms) {
+      if (deferredPrompt) return Promise.resolve(deferredPrompt);
+      return new Promise(resolve => {
+        const onPrompt = e => {
+          e.preventDefault();
+          deferredPrompt = e;
+          resolve(e);
+        };
+        window.addEventListener('beforeinstallprompt', onPrompt, { once: true });
+        setTimeout(() => {
+          window.removeEventListener('beforeinstallprompt', onPrompt);
+          resolve(deferredPrompt);
+        }, ms);
+      });
     }
 
     hintClose.addEventListener('click', hideHint);
@@ -3246,22 +3277,25 @@
     });
 
     installBtn.addEventListener('click', async () => {
-      if (deferredPrompt) {
-        deferredPrompt.prompt();
-        const { outcome } = await deferredPrompt.userChoice;
+      if (installing) return;
+      installing = true;
+      installBtn.textContent = '⏳ 准备安装…';
+      const prompt = await waitForPrompt(isAndroid() ? 1500 : 600);
+      installing = false;
+      installBtn.textContent = '📲 加到主屏幕';
+
+      if (prompt) {
+        prompt.prompt();
+        const { outcome } = await prompt.userChoice;
         if (outcome === 'accepted') installBtn.hidden = true;
         deferredPrompt = null;
         return;
       }
-      showHint(isIos() ? 'ios' : 'generic');
+      if (isIos()) showHint('ios');
+      else if (isAndroid()) showHint('android');
+      else showHint('generic');
     });
   })();
-
-  if ('serviceWorker' in navigator && location.protocol !== 'file:') {
-    window.addEventListener('load', () => {
-      navigator.serviceWorker.register('/sw.js').catch(() => {});
-    });
-  }
 </script>
 </body>
 </html>
